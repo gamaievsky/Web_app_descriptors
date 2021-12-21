@@ -2,3 +2,4 @@
 # Distribution / packaging
 env/
 assets/
+.DS_Store
