@@ -931,6 +931,47 @@ app.layout = html.Div([
         ),
         html.Hr(),
         html.Div(
+            id='compute',
+            children=[
+                html.H3("Descriptors"),
+                dcc.RadioItems(
+                    id='compute_type',
+                    options=[
+                        {'label': 'Static descriptors', 'value': 'static'},
+                        {'label': 'Dynamic descriptors', 'value': 'dynamic'},
+                        {'label': 'All descriptors', 'value': 'all_descriptors'}
+                    ],
+                    value='static',
+                    style={}
+                ),
+                html.Button(id='compute_button', n_clicks=0, children='Compute descriptors'),
+                html.Div(id='compute_hidden')
+            ]
+        ),
+
+        html.Hr(),
+        html.Div(
+            id='vis_options',
+            children=[
+                html.H3("Visualisation options"),
+                html.Div([
+                    html.Span('Visualise Trajectories'),
+                    daq.BooleanSwitch(id='vis_trajectories', on=False, style={'float':'left'})
+                    ],
+                    id='vis_trajectories_display'),
+                html.Br(),
+                html.Div(
+                    id='vis_descr_type',
+                ),
+                html.Div(
+                    id='vis_descr'
+                )
+            ]
+        ),
+
+
+        html.Hr(),
+        html.Div(
             id='visualisation_option',
             children=[
                 html.H3("Visualisation Options"),
@@ -946,11 +987,6 @@ app.layout = html.Div([
                     labelStyle={'display':'inline-block'}
                 ),
 
-                html.Div([
-                    html.Span('Visualise Trajectories'),
-                    daq.BooleanSwitch(id='trajectories', on=False, style={'float':'left'})
-                ],id='mode_abtract_vis', style={'display':'none'}),
-                html.Br(),
                 html.Big('Descriptors'),
                 dcc.RadioItems(
                     id='descr_type',
@@ -978,6 +1014,7 @@ app.layout = html.Div([
         html.Div(id='hidden'),
         html.Div(id='new_class'),
         html.Div(id='new_descr_values'),#, style={‘display’:‘none’})
+        html.Div(id='hidden_type'),
         html.Hr(),
         html.Div(id='visualisation')
     ]
@@ -1010,59 +1047,74 @@ def set_name_input2(filename):
 def set_name_input3(filename):
     return html.I(filename)
 
+
 # Descriptors inputs
 @app.callback(
-    Output('descriptors', 'children'),
-    Input('descr_type', 'value'),
-    Input('vis_type', 'value'))
-def set_descriptors(selected_descr_type, selected_vis_type):
-    if selected_vis_type == 'temporal':
-        return dcc.Dropdown(
-            id={'type':'selected_descr', 'index':1},
-            options=[{'label': descrNames[descr], 'value': descr} for descr in descrList[selected_descr_type]],
-            placeholder="Select a {} descriptor".format(selected_descr_type),
-            multi=True,
-            style={'width':'50%'}
-        )
+    Output('vis_descr_type', 'children'),
+    Input('compute_type', 'value'))
+def set_type_descr(value):
+    if value=='all_descriptors':
+        return html.Div(
+            id='vis_descr_type_bis',
+            children=[
+                html.Big('Type of descriptors'),
+                dcc.RadioItems(
+                    id='vis_descr_type_radio',
+                    options=[
+                        {'label':'Static','value':'static'},
+                        {'label':'Dynamic','value':'dynamic'}
+                    ],
+                    value='static',
+                    labelStyle={'display':'inline-block'}
+                )
+            ]
+        ),
 
-    else:
+# Descriptors type
+@app.callback(
+    Output('hidden_type', 'children'),
+    Input('vis_descr_type_radio', 'value'))
+def set_type_descr_hidden(value):
+    return value
+
+# Descriptors inputs
+@app.callback(
+    Output('vis_descr', 'children'),
+    Input('compute_type', 'value'))
+    # Input('vis_descr_type_radio', 'value'))
+def set_type_descr_bis(type):
+    if type!='all_descriptors':
         return html.Div(
             children=[
                 dcc.Dropdown(
-                    id={'type':'selected_descr', 'index':2},
-                    options=[{'label': descrNames[descr], 'value': descr} for descr in descrList[selected_descr_type]],
-                    placeholder="Select a {} descriptor for axe x".format(selected_descr_type),
+                    id='selected_descr1',
+                    options=[{'label': descrNames[descr], 'value': descr} for descr in descrList[type]],
+                    placeholder="Select a {} descriptor for axe x".format(type),
                     style={'width':'50%'}
                 ),
                 html.Br(),
                 dcc.Dropdown(
                     id={'type':'selected_descr', 'index':3},
-                    options=[{'label': descrNames[descr], 'value': descr} for descr in descrList[selected_descr_type]],
-                    placeholder="Select a {} descriptor for axe y".format(selected_descr_type),
+                    options=[{'label': descrNames[descr], 'value': descr} for descr in descrList[type]],
+                    placeholder="Select a {} descriptor for axe y".format(type),
                     style={'width':'50%'}
                 )
             ]
         )
 
-# Abstract mode input
-@app.callback(
-    Output('mode_abtract_vis', 'style'),
-    Input('vis_type', 'value'))
-def set_abstract_mode(selected_vis_type):
-    if selected_vis_type == 'temporal':
-        return {'display':'none'}
-    else:
-        return {'display':'inline-block'}
+
+
+
 
 # Test
-@app.callback(
-    Output('dessin', 'children'),
-    Input('submit_button', 'n_clicks'),
-    State('vis_type', 'value'),
-    State('descr_type', 'value'))
-def set_draw(n_clicks,selected_vis_type, selected_descr_type):
-    if n_clicks>0:
-        return 'Draw a {} figure of {} descriptors, press {}'.format(selected_vis_type, selected_descr_type, n_clicks)
+# @app.callback(
+#     Output('dessin', 'children'),
+#     Input('submit_button', 'n_clicks'),
+#     State('vis_type', 'value'),
+#     State('descr_type', 'value'))
+# def set_draw(n_clicks,selected_vis_type, selected_descr_type):
+#     if n_clicks>0:
+#         return 'Draw a {} figure of {} descriptors, press {}'.format(selected_vis_type, selected_descr_type, n_clicks)
 
 
 
@@ -1164,26 +1216,26 @@ def compute_descriptors(n_clicks, newClass, values, selected_vis_type):
 
 
 # Visualisation
-@app.callback(
-    Output('visualisation','children'),
-    Input('submit_button', 'n_clicks'),
-    Input('new_descr_values', 'children'),
-    Input('mode_abtract_vis', 'children'),
-    State('vis_type','value'),
-    State('trajectories','on'))
-def set_visualisation(n_clicks, newValuesDescr, fantome, vis_type, traj):
-    global mem_vis_type, mem_traj
-    if n_clicks==0:
-        mem_vis_type, mem_traj = vis_type, traj
-        return None
-    else:
-        global S,space
-        if vis_type!=mem_vis_type or traj!=mem_traj or newValuesDescr=='New descriptors values':
-            print('bientôt nouvelle figure')
-            S.Affichage(space = space, end = duration, vis_type=vis_type, traj=traj)
-            mem_vis_type, mem_traj = vis_type, traj
-            return html.Img(id='image',src=app.get_asset_url("temp_figure.png"), style={'width':'50%'})
-        return html.Img(id='image',src=app.get_asset_url("temp_figure.png"), style={'width':'50%'})
+# @app.callback(
+#     Output('visualisation','children'),
+#     Input('submit_button', 'n_clicks'),
+#     Input('new_descr_values', 'children'),
+#     Input('vis_trajectories_display', 'children'),
+#     State('vis_type','value'),
+#     State('trajectories','on'))
+# def set_visualisation(n_clicks, newValuesDescr, fantome, vis_type, traj):
+#     global mem_vis_type, mem_traj
+#     if n_clicks==0:
+#         mem_vis_type, mem_traj = vis_type, traj
+#         return None
+#     else:
+#         global S,space
+#         if vis_type!=mem_vis_type or traj!=mem_traj or newValuesDescr=='New descriptors values':
+#             print('bientôt nouvelle figure')
+#             S.Affichage(space = space, end = duration, vis_type=vis_type, traj=traj)
+#             mem_vis_type, mem_traj = vis_type, traj
+#             return html.Img(id='image',src=app.get_asset_url("temp_figure.png"), style={'width':'50%'})
+#         return html.Img(id='image',src=app.get_asset_url("temp_figure.png"), style={'width':'50%'})
 
 
 
