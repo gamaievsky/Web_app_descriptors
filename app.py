@@ -962,6 +962,19 @@ app.layout = html.Div([
                 html.Br(),
                 html.Div(
                     id='vis_descr_type',
+                    style={'display':'none'},
+                    children=[
+                        html.Big('Type of descriptors'),
+                        dcc.RadioItems(
+                            id='vis_descr_type_radio',
+                            options=[
+                                {'label':'Static','value':'static'},
+                                {'label':'Dynamic','value':'dynamic'}
+                            ],
+                            value='static',
+                            labelStyle={'display':'inline-block'}
+                        )
+                    ]
                 ),
                 html.Div(
                     id='vis_descr'
@@ -1014,7 +1027,6 @@ app.layout = html.Div([
         html.Div(id='hidden'),
         html.Div(id='new_class'),
         html.Div(id='new_descr_values'),#, style={‘display’:‘none’})
-        html.Div(id='hidden_type'),
         html.Hr(),
         html.Div(id='visualisation')
     ]
@@ -1050,32 +1062,14 @@ def set_name_input3(filename):
 
 # Descriptors inputs
 @app.callback(
-    Output('vis_descr_type', 'children'),
+    Output('vis_descr_type', 'style'),
     Input('compute_type', 'value'))
 def set_type_descr(value):
     if value=='all_descriptors':
-        return html.Div(
-            id='vis_descr_type_bis',
-            children=[
-                html.Big('Type of descriptors'),
-                dcc.RadioItems(
-                    id='vis_descr_type_radio',
-                    options=[
-                        {'label':'Static','value':'static'},
-                        {'label':'Dynamic','value':'dynamic'}
-                    ],
-                    value='static',
-                    labelStyle={'display':'inline-block'}
-                )
-            ]
-        ),
+        return {'display':'inline-block'}
+    else:
+        return {'display':'none'}
 
-# Descriptors type
-@app.callback(
-    Output('hidden_type', 'children'),
-    Input('vis_descr_type_radio', 'value'))
-def set_type_descr_hidden(value):
-    return value
 
 # Descriptors inputs
 @app.callback(
