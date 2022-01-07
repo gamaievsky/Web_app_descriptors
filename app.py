@@ -488,9 +488,7 @@ class SignalSepare:
 # ##########################################################################################################################################################################
 # ##########################################################################################################################################################################
 
-duration = 16.0
-Notemin = 'C1'
-Notemax = 'B9'
+
 
 
 
@@ -610,14 +608,14 @@ app.layout = html.Div([
                         id='parameters_analysis',
                         children=[
                             html.Hr(),
-                            html.Big('Minimal pitch'),
+                            html.Div('Minimal pitch'),
                             dcc.Dropdown(
                                 id='notemin',
                                 options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
                                 value='C1',
                                 style={'width':'50%'}
                             ),
-                            html.Big('Maximal pitch'),
+                            html.Div('Maximal pitch'),
                             dcc.Dropdown(
                                 id='notemax',
                                 options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
@@ -627,7 +625,7 @@ app.layout = html.Div([
                             html.Div([html.A('More details', href='https://librosa.org/doc/main/generated/librosa.note_to_hz.html#', target='_blank')]),
                             html.Br(),
 
-                            html.Big('Window shape'),
+                            html.Div('Window shape'),
                             dcc.Dropdown(
                                 id='window',
                                 options=[{'label': fun[0].upper()+fun[1:], 'value': fun} for fun in list_window],
@@ -636,7 +634,7 @@ app.layout = html.Div([
                             ),
                             html.Div([html.A('More details', href='https://docs.scipy.org/doc/scipy/reference/signal.windows.html', target='_blank')]),
                             html.Br(),
-                            html.Big('Reduction of percussive part'),
+                            html.Div('Reduction of percussive part'),
                             daq.BooleanSwitch(id='hpss', on=False, style={'float':'left'}),
                             html.Br(),
                             html.Div(
@@ -851,16 +849,18 @@ def set_margin(hpss):
     State('onsets','filename'),
     State('window','value'),
     State('hpss','on'),
-    State('hpss_margin','value'))
-def set_class_instance(n_clicks, main, sep_tracks, onsets, window, hpss, hpss_margin):
+    State('hpss_margin','value'),
+    State('notemin','value'),
+    State('notemax','value'))
+def set_class_instance(n_clicks, main, sep_tracks, onsets, window, hpss, hpss_margin, Notemin, Notemax):
     if n_clicks>0:
-        global duration
+        'On est ici'
         # Load main sound
         content_type1, content_string1 = main.split(",")
         decoded1 = base64.b64decode(content_string1)
         wav_file = open("assets/temp.wav", "wb")
         wav_file.write(decoded1)
-        y, sr = librosa.load('assets/temp.wav', duration = duration, sr=None)
+        y, sr = librosa.load('assets/temp.wav', sr=None)
 
         # Load separated_tracks
         if sep_tracks is not None:
@@ -872,7 +872,7 @@ def set_class_instance(n_clicks, main, sep_tracks, onsets, window, hpss, hpss_ma
                 decoded2 = base64.b64decode(content_string2)
                 wav_file = open("assets/temp{}.wav".format(i), "wb")
                 wav_file.write(decoded2)
-                y_temp, sr = librosa.load('assets/temp{}.wav'.format(i), duration = duration, sr=None)
+                y_temp, sr = librosa.load('assets/temp{}.wav'.format(i), sr=None)
 
 
         # Instance class
