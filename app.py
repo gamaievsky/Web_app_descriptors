@@ -489,12 +489,6 @@ class SignalSepare:
 # ##########################################################################################################################################################################
 
 
-
-
-
-##########################################################################################################################################################################
-##########################################################################################################################################################################
-
 # Interface et Application
 
 external_stylesheets = ['assets/bWLwgP.css']
@@ -516,86 +510,12 @@ app.layout = html.Div([
         html.Hr(),
 
 # Inputs
-        html.Div(
-            id="input_files",
-            children=[
-                html.H3("Input files"),
-                html.Div([
-                    html.Big('Main sound file'),
-                    dcc.Upload(
-                        id='main_sound',
-                        children=html.Div([
-                            'Drag and drop or ',
-                            html.A('Select Files')
-                        ]),
-                        style={
-                            'width': '30%',
-                            'height': '40px',
-                            'lineHeight': '30px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin': '10px',
-                            'display': 'inline-block'
-                        },
-                        multiple=False,
-                        filename=''
-                    ),
-                    html.Div(id='input1')
-                ]),
-
-                html.Div([
-                    html.Big('Separated audio tracks'),
-                    dcc.Upload(
-                        id='separated_tracks',
-                        children=html.Div([
-                            'Drag and drop or ',
-                            html.A('Select File')
-                        ]),
-                        style={
-                            'width': '30%',
-                            'height': '40px',
-                            'lineHeight': '30px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin': '10px',
-                            'display': 'inline-block'
-                        },
-                        # Allow multiple files to be uploaded
-                        multiple=True
-                    ),
-                    html.Div(id='input2')
-                ]),
-
-                html.Div([
-                    html.Big('Onsets'),
-                    dcc.Upload(
-                        id='onsets',
-                        children=html.Div([
-                            'Drag and drop or ',
-                            html.A('Select File')
-                        ]),
-                        style={
-                            'width': '30%',
-                            'height': '40px',
-                            'lineHeight': '30px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin': '10px',
-                            'display': 'inline-block'
-                        },
-                        multiple=False
-                    ),
-                    html.Div(id='input3')
-                ]),
-                html.Div(id='sound')
-            ]
-        ),
+        html.H3("Input files"),
+        html.Br(),
+        html.Div(id='tabs_input_files'),
+        dcc.Tabs(id='tabs', children=[]),
+        html.Button(id='add_audio_input', n_clicks=0, children='Add Audio input'),
+        html.Button(id='delete_audio_input', n_clicks=0, children='Delete Audio input'),
         html.Hr(),
 
 # Paramètres de l'analyse
@@ -755,11 +675,86 @@ app.layout = html.Div([
     ]
 )
 
+# Add or delete audio
+@app.callback(
+    Output('tabs','children'),
+    Output('tabs','value'),
+    Output('add_audio_input', 'n_clicks'),
+    Input('add_audio_input', 'n_clicks'),
+    Input('delete_audio_input', 'n_clicks'),
+    State('tabs','children'))
+def add_del_tab(add_audio, del_audio, children):
+    ctx = dash.callback_context
+    new_tab = dcc.Tab(
+        label='Audio {}'.format(add_audio + 1),
+        value='Audio {}'.format(add_audio + 1),
+        id={'type': 'audio', 'index': add_audio + 1},
+        # children='Input audio n°{}'.format(add_audio + 1)
+        children=[
+            html.Div([
+                html.Big('Main sound file {}'.format(add_audio + 1)),
+                dcc.Upload(
+                    id={'type': 'main_sound', 'index': add_audio + 1},
+                    children=html.Div(['Drag and drop or ', html.A('Select File')]),
+                    style={'width': '30%','height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px','display': 'inline-block'},
+
+                    multiple=False,
+                    filename=''
+                ),
+                html.Div(id={'type': 'input1', 'index': add_audio + 1})
+            ]),
+
+            html.Div([
+                html.Big('Separated audio tracks'),
+                dcc.Upload(
+                    id={'type': 'separated_tracks', 'index': add_audio + 1},
+                    children=html.Div(['Drag and drop or ', html.A('Select File')]),
+                    style={'width': '30%','height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px','display': 'inline-block'},
+                    # Allow multiple files to be uploaded
+                    multiple=True
+                ),
+                html.Div(id={'type': 'input2', 'index': add_audio + 1})
+            ]),
+
+            html.Div([
+                html.Big('Onsets'),
+                dcc.Upload(
+                    id={'type': 'onsets', 'index': add_audio + 1},
+                    children=html.Div(['Drag and drop or ', html.A('Select File')]),
+                    style={'width': '30%','height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px','display': 'inline-block'},
+                    multiple=False
+                ),
+                html.Div(id={'type': 'input3', 'index': add_audio + 1})
+            ]),
+            html.Div(id='sound')
+        ]
+    )
+
+    if add_audio==0 or ctx.triggered[0]['prop_id']=='add_audio_input.n_clicks':
+        print('create')
+        children.append(new_tab)
+        return children, 'Audio {}'.format(add_audio + 1), add_audio
+    else:
+        print('pop')
+        children.pop()
+        return children, 'Audio {}'.format(add_audio) ,(add_audio - 1)
+
+
+# Add or delete audio BIS
+@app.callback(
+    Output('delete_audio_input','style'),
+    Input('add_audio_input', 'n_clicks'))
+def cache_button(add_audio):
+    if add_audio==0:
+        return {'display':'none'}
+    else:
+        return {'display':'inline-block'}
+
 # Input main_sound
 @app.callback(
     Output('input1', 'children'),
     Output('sound','children'),
-    Input('main_sound', 'filename'))
+    Input({'type': 'main_sound', 'index': ALL}, 'filename'))
 def set_name_main(filename):
     if isinstance(filename, str) and len(filename)>4:
         return html.I(filename), html.Audio(src='assets/temp.wav', controls=True)
