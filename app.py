@@ -622,7 +622,7 @@ app.layout = html.Div([
         ),
         html.Hr(),
 
-# Options de visaulisation
+# Options de visulisation
         html.Div(
             id='vis_options',
             children=[
@@ -666,10 +666,34 @@ app.layout = html.Div([
                             style={'width':'50%'}
                         )
                     ]
-                )
+                ),
+                html.Br(),
+                html.Details([
+                    html.Summary('Advanced options'),
+                    dcc.Tabs(id='tabs_visualise', children=[])
+
+                    # html.Div([
+                    #     html.Div([
+                    #         dcc.RadioItems(
+                    #             id={'type': 'show', 'index': i}
+                    #             options=[
+                    #                 {'label': 'Show', 'value': 'show'},
+                    #                 {'label': 'Hide', 'value': 'hide'},
+                    #             ],
+                    #             value='show',
+                    #             labelStyle={'display': 'inline-block'}
+                    #         ),
+                    #         dcc.Input(
+                    #             id={'type': 'name_elt', 'index': i},
+                    #         )
+                    #         for i in range
+                    #     ])
+                    # ])
+                ])
             ]
         ),
         html.Div(id='hidden_dataframe',style={'display':'none'}),#, style={‘display’:‘none’})
+        dcc.Store(id='dic_chords_trans',),
         html.Hr(),
         html.Div(id='visualisation')
     ]
@@ -679,11 +703,14 @@ app.layout = html.Div([
 @app.callback(
     Output('tabs','children'),
     Output('tabs','value'),
+    Output('tabs_visualise','children'),
+    Output('tabs_visualise','value'),
     Output('add_audio_input', 'n_clicks'),
     Input('add_audio_input', 'n_clicks'),
     Input('delete_audio_input', 'n_clicks'),
-    State('tabs','children'))
-def add_del_tab(add_audio, del_audio, children):
+    State('tabs','children'),
+    State('tabs_visualise','children'))
+def add_del_tab(add_audio, del_audio, children, children_vis):
     ctx = dash.callback_context
     new_tab = dcc.Tab(
         label='Audio {}'.format(add_audio + 1),
@@ -692,6 +719,10 @@ def add_del_tab(add_audio, del_audio, children):
         # children='Input audio n°{}'.format(add_audio + 1)
         children=[
             html.Div([
+                html.Div(id={'type': 'change_name', 'index': add_audio + 1}, style={'display':'none'}, children=[
+                    html.Div('Change the title:'),
+                    dcc.Input(id={'type': 'name', 'index': add_audio + 1}, type='text')]),
+                html.P(),
                 html.Big('Main sound file {}'.format(add_audio + 1)),
                 dcc.Upload(
                     id={'type': 'main_sound', 'index': add_audio + 1},
@@ -707,7 +738,7 @@ def add_del_tab(add_audio, del_audio, children):
             html.Div([
                 html.Big('Separated audio tracks'),
                 dcc.Upload(
-                    id={'type': 'separated_tracks', 'index': add_audio + 1},
+                    id={'type': 'tracks', 'index': add_audio + 1},
                     children=html.Div(['Drag and drop or ', html.A('Select File')]),
                     style={'width': '30%','height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px','display': 'inline-block'},
                     # Allow multiple files to be uploaded
@@ -726,18 +757,25 @@ def add_del_tab(add_audio, del_audio, children):
                 ),
                 html.Div(id={'type': 'input3', 'index': add_audio + 1})
             ]),
-            html.Div(id='sound')
+            html.Div(id={'type': 'sound', 'index': add_audio + 1})
         ]
     )
 
+    new_tab_vis = dcc.Tab(
+        label='Audio {}'.format(add_audio + 1),
+        value='Audio {}'.format(add_audio + 1),
+        id={'type': 'audio_chords', 'index': add_audio + 1},
+        children = []
+    )
+
     if add_audio==0 or ctx.triggered[0]['prop_id']=='add_audio_input.n_clicks':
-        print('create')
         children.append(new_tab)
-        return children, 'Audio {}'.format(add_audio + 1), add_audio
+        children_vis.append(new_tab_vis)
+        return children, 'Audio {}'.format(add_audio + 1), children_vis, 'Audio 1', add_audio,
     else:
-        print('pop')
         children.pop()
-        return children, 'Audio {}'.format(add_audio) ,(add_audio - 1)
+        children_vis.pop()
+        return children, 'Audio {}'.format(add_audio), children_vis, 'Audio 1', (add_audio - 1)
 
 
 # Add or delete audio BIS
@@ -752,28 +790,30 @@ def cache_button(add_audio):
 
 # Input main_sound
 @app.callback(
-    Output('input1', 'children'),
-    Output('sound','children'),
-    Input({'type': 'main_sound', 'index': ALL}, 'filename'))
+    Output({'type': 'input1', 'index': MATCH}, 'children'),
+    Output({'type': 'sound', 'index': MATCH},'children'),
+    Output({'type': 'name', 'index': MATCH},'value'),
+    Output({'type': 'change_name', 'index': MATCH},'style'),
+    Input({'type': 'main_sound', 'index': MATCH}, 'filename'))
 def set_name_main(filename):
     if isinstance(filename, str) and len(filename)>4:
-        return html.I(filename), html.Audio(src='assets/temp.wav', controls=True)
+        return html.I(filename), html.Audio(src='assets/temp.wav', controls=True),filename.split('.')[0], {'display':'inline-block'}
     else:
-        return None, None
+        return None, None, None, {'display':'none'}
 
 
-# Input separated_tracks
+# Input tracks
 @app.callback(
-    Output('input2', 'children'),
-    Input('separated_tracks', 'filename'))
+    Output({'type': 'input2', 'index': MATCH}, 'children'),
+    Input({'type': 'tracks', 'index': MATCH}, 'filename'))
 def set_name_input2(filename):
     if filename==None: return ''
     return [html.Div(html.I(name)) for name in filename]
 
 # Input onsets
 @app.callback(
-    Output('input3', 'children'),
-    Input('onsets', 'filename'))
+    Output({'type': 'input3', 'index': MATCH}, 'children'),
+    Input({'type': 'onsets', 'index': MATCH}, 'filename'))
 def set_name_input3(filename):
     return html.I(filename)
 
@@ -808,9 +848,9 @@ def set_type_descr_2(type, val):
     Output('selected_descr1', 'value'),
     Output('selected_descr2', 'value'),
     Input('vis_descr_type_radio', 'value'),
-    Input('separated_tracks','contents'))
-def set_type_descr_3(type_d, sep_tracks):
-    if type_d=='static' and sep_tracks is None:
+    Input({'type': 'tracks', 'index': ALL},'contents'))
+def set_type_descr_3(type_d, list_tracks):
+    if type_d=='static' and (list_tracks is None or None in list_tracks):
         type = 'staticOneSound'
         l = [{'label': 'Concordance', 'value': 'concordance', 'disabled': True}, {'label': 'Concordance Totale', 'value': 'concordanceTot', 'disabled': True}]
     else:
@@ -837,48 +877,67 @@ def set_margin(hpss):
 
 # Instanciation de classe
 @app.callback(
+    Output('dic_chords_trans','data'),
     Output('hidden_new_class', 'children'),
     Input('compute_button', 'n_clicks'),
-    State('main_sound','contents'),
-    State('separated_tracks','contents'),
-    State('onsets','filename'),
+    State({'type': 'main_sound', 'index': ALL},'contents'),
+    State({'type': 'tracks', 'index': ALL},'contents'),
+    State({'type': 'onsets', 'index': ALL},'filename'),
     State('window','value'),
     State('hpss','on'),
     State('hpss_margin','value'),
     State('notemin','value'),
     State('notemax','value'))
-def set_class_instance(n_clicks, main, sep_tracks, onsets, window, hpss, hpss_margin, Notemin, Notemax):
-    if n_clicks>0:
-        'On est ici'
-        # Load main sound
-        content_type1, content_string1 = main.split(",")
-        decoded1 = base64.b64decode(content_string1)
-        wav_file = open("assets/temp.wav", "wb")
-        wav_file.write(decoded1)
-        y, sr = librosa.load('assets/temp.wav', sr=None)
-
-        # Load separated_tracks
-        if sep_tracks is not None:
-            i=0 #Number of separated tracks
-            l=[] #List of separated tracks
-            for content in sep_tracks:
-                i+=1
-                content_type2, content_string2 = content.split(",")
-                decoded2 = base64.b64decode(content_string2)
-                wav_file = open("assets/temp{}.wav".format(i), "wb")
-                wav_file.write(decoded2)
-                y_temp, sr = librosa.load('assets/temp{}.wav'.format(i), sr=None)
-
-
-        # Instance class
+def set_class_instance(n_clicks, list_main, list_sep_tracks, list_onsets, window, hpss, hpss_margin, Notemin, Notemax):
+    if n_clicks is None:
+        raise PreventUpdate
+    else:
         global S
-        if sep_tracks is None:
-            S = SignalSepare(y, sr, [], 'assets/'+onsets, window, hpss, hpss_margin, Notemin, Notemax,)
-        else:
-            S = SignalSepare(y, sr, l, 'assets/'+onsets, window, hpss, hpss_margin, Notemin, Notemax,)
-        # Analyse spectrale et segmentation
-        S.GlobalSpectralAnalyis()
-        S.TracksSpectralAnalyis()
+        S = []
+        dic={'static':{}, 'dynamic':{}}
+        # dic={'static':{}, 'dynamic':{}}
+        for i, (main, sep_tracks,onsets) in enumerate(zip(list_main, list_sep_tracks, list_onsets)):
+            # Load main sound
+            content_type1, content_string1 = main.split(",")
+            decoded1 = base64.b64decode(content_string1)
+            wav_file = open("assets/temp.wav", "wb")
+            wav_file.write(decoded1)
+            y, sr = librosa.load('assets/temp.wav', sr=None)
+
+            # Load tracks
+            if sep_tracks is not None:
+                k=0 #Number of separated tracks
+                l=[] #List of separated tracks
+                for content in sep_tracks:
+                    k+=1
+                    content_type2, content_string2 = content.split(",")
+                    decoded2 = base64.b64decode(content_string2)
+                    wav_file = open("assets/temp{}.wav".format(k), "wb")
+                    wav_file.write(decoded2)
+                    y_temp, sr = librosa.load('assets/temp{}.wav'.format(i), sr=None)
+
+
+            # Instance class
+            if sep_tracks is None:
+                inst = SignalSepare(y, sr, [], 'assets/'+onsets, window, hpss, hpss_margin, Notemin, Notemax,)
+            else:
+                inst = SignalSepare(y, sr, l, 'assets/'+onsets, window, hpss, hpss_margin, Notemin, Notemax,)
+            # Analyse spectrale et segmentation
+            inst.GlobalSpectralAnalyis()
+            inst.TracksSpectralAnalyis()
+            # Ajout des noms au dictionnaire
+            print('nombre frames : {}'.format(inst.n_frames))
+            dic['static']['Audio {}'.format(i+1)] = [k for k in range(1, inst.n_frames - 1)]
+            dic['dynamic']['Audio {}'.format(i+1)] = [k for k in range(1, inst.n_frames - 1)]
+            # Ajout de l'instance de classe à S
+            S.append(inst)
+        print(dic)
+
+
+        return dic, None
+
+
+
 
 
 # Descriptors computation
@@ -887,59 +946,64 @@ def set_class_instance(n_clicks, main, sep_tracks, onsets, window, hpss, hpss_ma
     Input('compute_button', 'n_clicks'),
     Input('hidden_new_class', 'children'),
     State('compute_type','value'),
-    State('separated_tracks','contents'))
-def compute_descriptors(n_clicks, newClass, type, tracks):
+    State({'type': 'tracks', 'index': ALL},'contents'))
+def compute_descriptors(n_clicks, newClass, type, list_tracks):
     global mem_space
     if n_clicks == 0:
         mem_space = None
     else:
         # List of descriptors to compute
-        if type=='static' and tracks is None:
+        if type=='static' and None in list_tracks:
             space_compute = descrList['staticOneSound']
-        elif type=='all_descriptors' and tracks is None:
-            space_compute = descrList['dynamic']+descrList['staticOneSound']
-        elif type=='all_descriptors' and tracks is not None:
-            space_compute = descrList['dynamic']+descrList['static']
+        elif type=='all_descriptors' and None in list_tracks:
+            space_compute = descrList['dynamic'] + descrList['staticOneSound']
+        elif type=='all_descriptors' and None not in list_tracks:
+            space_compute = descrList['dynamic'] + descrList['static']
         else:
             space_compute = descrList[type]
+        mem_space = space_compute
 
         # Do the computation
         global S, simpl
-        if simpl: S.SimplifySpectrum()
-        S.ComputeDescripteurs(space = space_compute)
-        mem_space = space_compute
+        for i in range(len(S)):
+            if simpl: S[i].SimplifySpectrum()
+            S[i].ComputeDescripteurs(space = space_compute)
+
 
 # Calcul de DataFrame
 @app.callback(
     Output('hidden_dataframe', 'children'),
     Input('compute_button', 'n_clicks'),
     Input('vis_descr_type_radio','value'),
+    Input({'type': 'name', 'index': ALL}, 'value'),
     Input('hidden_compute_descr', 'children'))
-def compute_dataframe(n_clicks, type, hidden):
+def compute_dataframe(n_clicks, type, names, hidden):
     global df, S
     if n_clicks == 0:
         df = None
     else:
         # List of descriptors to compute
         global space
-        dict={}
-        for descr in space:
-            dict[descr]=getattr(S, descr)
-        dict['index']=range(1,len(dict[space[0]]) + 1)
-        df=pd.DataFrame(dict)
+        frames = []
+        # Dataframe of tracks
+        for i in range(len(S)):
+            dict={}
+            for descr in space:
+                dict[descr]=getattr(S[i], descr)
+            # Number of verticalities or transitions
+            L = len(dict[space[0]])
+            dict['index']=range(1, L+1)
+            dict['audio']=[names[i] for k in range(L)]
+            df_track = pd.DataFrame(dict)
+            frames.append(df_track)
+        # Concatenate
+        df = pd.concat(frames)
+        print(df)
         return 'Dataframe computed'
 
 
-# # Réinitialisation des descripteurs de la visualisation lors du changement de type de descripteur
-# @app.callback(
-#     Output('selected_descr1', 'value'),
-#     Output('selected_descr2', 'value'),
-#     Input('compute_button', 'n_clicks'),
-#     Input('vis_descr_type_radio','value'),
-#     Input('hidden_compute_descr', 'children'))
-# def compute_dataframe(n_clicks, type, hidden):
 
-# Visualisation
+# # Visualisation
 @app.callback(
     Output('visualisation','children'),
     Input('compute_button', 'n_clicks'),
@@ -956,9 +1020,9 @@ def set_visualisation(n_clicks, descr1, descr2, traj, hidden, hidden2, hidden3):
         if (descr1 is not None) and (descr2 is not None):
             global df
             if traj:
-                fig = px.line(df, x=descr1, y=descr2, text='index')
+                fig = px.line(df, x=descr1, y=descr2, text='index', color='audio')
             else:
-                fig = px.scatter(df, x=descr1, y=descr2, text='index')
+                fig = px.scatter(df, x=descr1, y=descr2, text='index', color='audio')
             fig.update_traces(textposition="bottom right")
             fig.update_xaxes(title_text=descrNames[descr1])
             fig.update_yaxes(title_text=descrNames[descr2])
@@ -972,6 +1036,9 @@ def set_visualisation(n_clicks, descr1, descr2, traj, hidden, hidden2, hidden3):
                     'lineHeight': '30px'
                 },
             )
+
+
+
 
 
 if __name__ == '__main__':
