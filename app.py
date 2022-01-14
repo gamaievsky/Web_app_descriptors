@@ -528,20 +528,26 @@ app.layout = html.Div([
                         id='parameters_analysis',
                         children=[
                             html.Hr(),
-                            html.Div('Minimal pitch'),
-                            dcc.Dropdown(
-                                id='notemin',
-                                options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
-                                value='C1',
-                                style={'width':'50%'}
-                            ),
-                            html.Div('Maximal pitch'),
-                            dcc.Dropdown(
-                                id='notemax',
-                                options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
-                                value='C9',
-                                style={'width':'50%'}
-                            ),
+                            html.Div([
+                                html.Div('Minimal pitch', style={'display': 'inline-block'}),
+                                dcc.Dropdown(
+                                    id='notemin',
+                                    options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
+                                    value='C1',
+                                    style={'width':'30%'}
+                                )
+                            ]),
+                            html.Div([
+                                html.Div('Maximal pitch', style={'display': 'inline-block'}),
+                                dcc.Dropdown(
+                                    id='notemax',
+                                    options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
+                                    value='C9',
+                                    style={'width':'30%'}
+                                )
+                            ]),
+
+
                             html.Div([html.A('More details', href='https://librosa.org/doc/main/generated/librosa.note_to_hz.html#', target='_blank')]),
                             html.Br(),
 
@@ -617,6 +623,11 @@ app.layout = html.Div([
                     id="loading-2",
                     type="default",
                     children=html.Div(id='hidden_new_class', style={'display':'none'})
+                ),
+                dcc.Loading(
+                    id="loading-3",
+                    type="circle",
+                    children=html.Div(id='hidden_chords_and_trans', style={'display':'none'})
                 )
             ]
         ),
@@ -668,32 +679,18 @@ app.layout = html.Div([
                     ]
                 ),
                 html.Br(),
+                html.Div([
+                    html.Div('Rescale axes for every audio', style={'display':'inline-block'}),
+                    daq.BooleanSwitch(id='normalisation', on=False, style={'float':'left', 'display':'inline-block'})
+                    ]),
+                html.Br(),
                 html.Details([
                     html.Summary('Advanced options'),
                     dcc.Tabs(id='tabs_visualise', children=[])
-
-                    # html.Div([
-                    #     html.Div([
-                    #         dcc.RadioItems(
-                    #             id={'type': 'show', 'index': i}
-                    #             options=[
-                    #                 {'label': 'Show', 'value': 'show'},
-                    #                 {'label': 'Hide', 'value': 'hide'},
-                    #             ],
-                    #             value='show',
-                    #             labelStyle={'display': 'inline-block'}
-                    #         ),
-                    #         dcc.Input(
-                    #             id={'type': 'name_elt', 'index': i},
-                    #         )
-                    #         for i in range
-                    #     ])
-                    # ])
                 ])
             ]
         ),
         html.Div(id='hidden_dataframe',style={'display':'none'}),#, style={‘display’:‘none’})
-        dcc.Store(id='dic_chords_trans',),
         html.Hr(),
         html.Div(id='visualisation')
     ]
@@ -721,7 +718,7 @@ def add_del_tab(add_audio, del_audio, children, children_vis):
             html.Div([
                 html.Div(id={'type': 'change_name', 'index': add_audio + 1}, style={'display':'none'}, children=[
                     html.Div('Change the title:'),
-                    dcc.Input(id={'type': 'name', 'index': add_audio + 1}, type='text')]),
+                    dcc.Input(id={'type': 'name_audio', 'index': add_audio + 1}, type='text')]),
                 html.P(),
                 html.Big('Main sound file {}'.format(add_audio + 1)),
                 dcc.Upload(
@@ -764,8 +761,7 @@ def add_del_tab(add_audio, del_audio, children, children_vis):
     new_tab_vis = dcc.Tab(
         label='Audio {}'.format(add_audio + 1),
         value='Audio {}'.format(add_audio + 1),
-        id={'type': 'audio_chords', 'index': add_audio + 1},
-        children = []
+        id={'type': 'audio_chords', 'index': add_audio + 1}
     )
 
     if add_audio==0 or ctx.triggered[0]['prop_id']=='add_audio_input.n_clicks':
@@ -792,7 +788,7 @@ def cache_button(add_audio):
 @app.callback(
     Output({'type': 'input1', 'index': MATCH}, 'children'),
     Output({'type': 'sound', 'index': MATCH},'children'),
-    Output({'type': 'name', 'index': MATCH},'value'),
+    Output({'type': 'name_audio', 'index': MATCH},'value'),
     Output({'type': 'change_name', 'index': MATCH},'style'),
     Input({'type': 'main_sound', 'index': MATCH}, 'filename'))
 def set_name_main(filename):
@@ -877,7 +873,7 @@ def set_margin(hpss):
 
 # Instanciation de classe
 @app.callback(
-    Output('dic_chords_trans','data'),
+    Output({'type': 'audio_chords', 'index': ALL}, 'children'),
     Output('hidden_new_class', 'children'),
     Input('compute_button', 'n_clicks'),
     State({'type': 'main_sound', 'index': ALL},'contents'),
@@ -889,13 +885,15 @@ def set_margin(hpss):
     State('notemin','value'),
     State('notemax','value'))
 def set_class_instance(n_clicks, list_main, list_sep_tracks, list_onsets, window, hpss, hpss_margin, Notemin, Notemax):
-    if n_clicks is None:
+    global S
+    S=[]
+    if n_clicks==0:
         raise PreventUpdate
     else:
-        global S
-        S = []
-        dic={'static':{}, 'dynamic':{}}
-        # dic={'static':{}, 'dynamic':{}}
+        # global S
+        ctx = dash.callback_context
+        print(ctx.triggered)
+
         for i, (main, sep_tracks,onsets) in enumerate(zip(list_main, list_sep_tracks, list_onsets)):
             # Load main sound
             content_type1, content_string1 = main.split(",")
@@ -925,16 +923,84 @@ def set_class_instance(n_clicks, list_main, list_sep_tracks, list_onsets, window
             # Analyse spectrale et segmentation
             inst.GlobalSpectralAnalyis()
             inst.TracksSpectralAnalyis()
-            # Ajout des noms au dictionnaire
-            print('nombre frames : {}'.format(inst.n_frames))
-            dic['static']['Audio {}'.format(i+1)] = [k for k in range(1, inst.n_frames - 1)]
-            dic['dynamic']['Audio {}'.format(i+1)] = [k for k in range(1, inst.n_frames - 1)]
+
             # Ajout de l'instance de classe à S
             S.append(inst)
-        print(dic)
+
+            # Entrée pour les accords et les transitions
 
 
-        return dic, None
+
+        # # Entrée pour les accords et les transitions
+        liste_children = [
+            html.Div([
+                html.Div([html.Big('List of verticalities (chords):')] + [
+                    html.Div([
+                        dcc.Input(
+                            id={'type': 'name_chord', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1), style={'display': 'inline-block'}
+                        ),
+                        dcc.RadioItems(
+                            id={'type': 'show_chord', 'index': i+1,'temp': k+1},
+                            options=[
+                                {'label': 'Show', 'value': 1},
+                                {'label': 'Hide', 'value': 0},
+                            ],
+                            value=1,
+                            labelStyle={'display': 'inline-block'},
+                            style={'display': 'inline-block'}
+                        )
+                    ])
+                    for k in range(S[i].n_frames - 2)
+                ], id={'type': 'liste_chords', 'index': i+1}),
+
+                html.Div([html.Big('List of transitions:')] + [
+                    html.Div([
+                        dcc.Input(
+                            id={'type': 'name_trans', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1), style={'display': 'inline-block'}
+                        ),
+                        dcc.RadioItems(
+                            id={'type': 'show_trans', 'index': i+1,'temp': k+1},
+                            options=[
+                                {'label': 'Show', 'value': 1},
+                                {'label': 'Hide', 'value': 0},
+                            ],
+                            value=1,
+                            labelStyle={'display': 'inline-block'},
+                            style={'display': 'inline-block'}
+                        )
+                    ])
+                    for k in range(S[i].n_frames - 3)
+                ], id={'type': 'liste_trans', 'index': i+1})
+            ])
+
+            for i in range(len(S))
+        ]
+
+        print('Instanciation ok')
+        return liste_children, None
+
+
+
+# Affichage des accords ou des transitions
+@app.callback(
+    Output({'type': 'liste_chords', 'index': ALL}, 'style'),
+    Output({'type': 'liste_trans', 'index': ALL}, 'style'),
+    Output('hidden_chords_and_trans', 'children'),
+    Input('vis_descr_type_radio', 'value'),
+    Input('hidden_new_class', 'children'),
+    State('compute_button', 'n_clicks'))
+def name_chords_trans(type, hidden, n_clicks):
+    if n_clicks==0:
+        raise PreventUpdate
+    else:
+        global S
+        if type=='static':
+            displ_stat, displ_dyn = {'display':'inline-block'}, {'display':'none'}
+        else:
+            displ_stat, displ_dyn = {'display':'none'}, {'display':'inline-block'}
+        print('accords_trans')
+        return [displ_stat for i in range(len(S))], [displ_dyn for i in range(len(S))], None
+
 
 
 
@@ -945,12 +1011,12 @@ def set_class_instance(n_clicks, list_main, list_sep_tracks, list_onsets, window
     Output('hidden_compute_descr', 'children'),
     Input('compute_button', 'n_clicks'),
     Input('hidden_new_class', 'children'),
+    State('hidden_chords_and_trans', 'children'),
     State('compute_type','value'),
     State({'type': 'tracks', 'index': ALL},'contents'))
-def compute_descriptors(n_clicks, newClass, type, list_tracks):
-    global mem_space
+def compute_descriptors(n_clicks, hidden1, hidden2, type, list_tracks):
     if n_clicks == 0:
-        mem_space = None
+        raise PreventUpdate
     else:
         # List of descriptors to compute
         if type=='static' and None in list_tracks:
@@ -961,13 +1027,13 @@ def compute_descriptors(n_clicks, newClass, type, list_tracks):
             space_compute = descrList['dynamic'] + descrList['static']
         else:
             space_compute = descrList[type]
-        mem_space = space_compute
 
         # Do the computation
         global S, simpl
         for i in range(len(S)):
             if simpl: S[i].SimplifySpectrum()
             S[i].ComputeDescripteurs(space = space_compute)
+        print('computation')
 
 
 # Calcul de DataFrame
@@ -975,9 +1041,13 @@ def compute_descriptors(n_clicks, newClass, type, list_tracks):
     Output('hidden_dataframe', 'children'),
     Input('compute_button', 'n_clicks'),
     Input('vis_descr_type_radio','value'),
-    Input({'type': 'name', 'index': ALL}, 'value'),
+    Input({'type': 'name_audio', 'index': ALL}, 'value'),
+    Input({'type': 'name_chord', 'index': ALL, 'temp':ALL},'value'),
+    Input({'type': 'name_trans', 'index': ALL, 'temp':ALL},'value'),
+    Input({'type': 'show_chord', 'index': ALL, 'temp':ALL},'value'),
+    Input({'type': 'show_trans', 'index': ALL, 'temp':ALL},'value'),
     Input('hidden_compute_descr', 'children'))
-def compute_dataframe(n_clicks, type, names, hidden):
+def compute_dataframe(n_clicks, type, names_audio, name_chords, name_trans, show_chords, show_trans, hidden):
     global df, S
     if n_clicks == 0:
         df = None
@@ -986,43 +1056,97 @@ def compute_dataframe(n_clicks, type, names, hidden):
         global space
         frames = []
         # Dataframe of tracks
+        j = 0
         for i in range(len(S)):
             dict={}
             for descr in space:
                 dict[descr]=getattr(S[i], descr)
             # Number of verticalities or transitions
             L = len(dict[space[0]])
-            dict['index']=range(1, L+1)
-            dict['audio']=[names[i] for k in range(L)]
+            if type=='static':
+                dict['index'] = name_chords[j:j+L]
+                dict['show'] = show_chords[j:j+L]
+            if type=='dynamic':
+                dict['index'] = name_trans[j:j+L]
+                dict['show'] = show_trans[j:j+L]
+            j = j+L
+            dict['audio']=[names_audio[i] for k in range(L)]
             df_track = pd.DataFrame(dict)
             frames.append(df_track)
         # Concatenate
         df = pd.concat(frames)
         print(df)
+        print('Dataframe computed')
         return 'Dataframe computed'
 
 
 
-# # Visualisation
+# Visualisation
 @app.callback(
     Output('visualisation','children'),
     Input('compute_button', 'n_clicks'),
     Input('selected_descr1','value'),
     Input('selected_descr2','value'),
     Input('vis_trajectories', 'on'),
+    Input('normalisation', 'on'),
     Input('vis_descr', 'children'),
     Input('hidden_dataframe', 'children'),
     Input('hidden_compute_descr', 'children'))
-def set_visualisation(n_clicks, descr1, descr2, traj, hidden, hidden2, hidden3):
+def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hidden3):
     if n_clicks is None:
         raise PreventUpdate
     else:
         if (descr1 is not None) and (descr2 is not None):
             global df
-            if traj:
-                fig = px.line(df, x=descr1, y=descr2, text='index', color='audio')
+            global space
+
+            # Normalisation des descripteurs
+
+            if not norm:
+                df_norm = df.copy()
+                for descr in space:
+                    max = df_norm[descr].max()
+                    min = df_norm[descr].min()
+                    if (max-min)!= 0:
+                        df_norm[descr] = (df_norm[descr] - min) / (max-min)
+
             else:
-                fig = px.scatter(df, x=descr1, y=descr2, text='index', color='audio')
+                audios = df['audio'].to_list()
+                audios = list(set(audios))
+                frames = []
+                for i in audios:
+                    print('la boucle est là !')
+                    fr = df[df['audio']==i]
+                    for descr in space:
+                        max = df[df['audio']==i][descr].max()
+                        min = df[df['audio']==i][descr].min()
+                        if (max-min)!= 0:
+                            fr[descr] = (fr[descr] - min) / (max-min)
+                    frames.append(fr)
+                df_norm = pd.concat(frames)
+
+
+            # Selection des points à montrer
+            df_plot = df_norm[df_norm['show']==1]
+
+            if traj:
+                fig = px.line(
+                    df_plot, x=descr1, y=descr2, text='index', color='audio',
+                    hover_data={
+                        'audio':False,
+                        descr1:':.2f',
+                        descr2:':.2f'
+                    }
+                )
+            else:
+                fig = px.scatter(
+                    df_plot, x=descr1, y=descr2, text='index', color='audio',
+                    hover_data={
+                        'audio':False,
+                        descr1:':.2f',
+                        descr2:':.2f'
+                    }
+                )
             fig.update_traces(textposition="bottom right")
             fig.update_xaxes(title_text=descrNames[descr1])
             fig.update_yaxes(title_text=descrNames[descr2])

@@ -38,17 +38,27 @@ app = dash.Dash(__name__)
 # ])
 
 app.layout = html.Div([
-    html.Div('essai'),
-    dcc.Store(id='store'),
-    html.Button(id='button', n_clicks=0, children='Click')
+    html.Div([
+        dcc.Input(
+            id={'type': 'name_elt', 'temp':k},
+            value=name,
+            style={'display': 'inline-block'}
+
+        ),
+        dcc.RadioItems(
+            id={'type': 'show','temp': k+1},
+            options=[
+                {'label': 'Show', 'value': 'show'},
+                {'label': 'Hide', 'value': 'hide'},
+            ],
+            value='show',
+            labelStyle={'display': 'inline-block'},
+            style={'display': 'inline-block'}
+        )
+    ])
+    for (k, name) in enumerate(['Accord 1', 'Accord 2'])
 ])
 
-@app.callback(
-    Output('store', 'data'),
-    Input('button', 'n_clicks'))
-def set_type_descr_2(n_clicks):
-    dic={'key':'value'}
-    return dic
 
 # fig.layout.updatemenus[0].buttons[0].args[1]['frame']['duration'] = 1000
 # fig.layout.updatemenus[0].buttons[0].args[1]['transition']['duration'] = 5
