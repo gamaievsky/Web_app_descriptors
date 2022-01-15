@@ -206,8 +206,8 @@ class SignalSepare:
             for k in range(self.n_pistes):
                 for i in range(self.n_bins):
                     for j in reversed(range(self.N)):
-                        if j <= self.N_sample[i]: ChromPiste[k][i,j] = ChromPiste_copy[k][i,j]
-                        else: ChromPiste[k][i,j] = ChromPiste_copy[k][i,j-int(self.N_sample[i]/2)]
+                        if j <= self.N_sample[i]: ChromPistes[k][i,j] = ChromPiste_copy[k][i,j]
+                        else: ChromPistes[k][i,j] = ChromPiste_copy[k][i,j-int(self.N_sample[i]/2)]
 
             # SYNCHRONISED SPECTRUM
             for k in range(self.n_pistes):
@@ -301,6 +301,8 @@ class SignalSepare:
         self.chrom_concordance[:,0] = 0
         self.chrom_concordance[:,self.n_frames-1] = 0
         self.concordance = self.chrom_concordance.sum(axis=0)
+        self.concordance = self.concordance[1:-1]
+
 
 
     def ConcordanceTot(self):
@@ -855,6 +857,8 @@ def set_type_descr_3(type_d, list_tracks):
 
     global space
     space = descrList[type]
+    print('Space settled')
+    print(space)
 
     return [{'label': descrNames[descr], 'value': descr} for descr in descrList[type]]+l, [{'label': descrNames[descr], 'value': descr} for descr in descrList[type]]+l, "Select a {} descriptor for axe x".format(type_d), "Select a {} descriptor for axe x".format(type_d), None, None
 
@@ -892,42 +896,47 @@ def set_class_instance(n_clicks, list_main, list_sep_tracks, list_onsets, window
     else:
         # global S
         ctx = dash.callback_context
-        print(ctx.triggered)
+        for i, (main, sep_tracks, onsets) in enumerate(zip(list_main, list_sep_tracks, list_onsets)):
+            # Calcul duration
+            onsets_list = []
+            with open('assets/'+onsets,'r') as f:
+                for line in f:
+                    l = line.split()
+                    onsets_list.append(float(l[0]))
+            duration = onsets_list[-1]+0.05
 
-        for i, (main, sep_tracks,onsets) in enumerate(zip(list_main, list_sep_tracks, list_onsets)):
             # Load main sound
             content_type1, content_string1 = main.split(",")
             decoded1 = base64.b64decode(content_string1)
             wav_file = open("assets/temp.wav", "wb")
             wav_file.write(decoded1)
-            y, sr = librosa.load('assets/temp.wav', sr=None)
+            y, sr = librosa.load('assets/temp.wav', sr=None, duration = duration)
 
             # Load tracks
             if sep_tracks is not None:
-                k=0 #Number of separated tracks
-                l=[] #List of separated tracks
-                for content in sep_tracks:
-                    k+=1
+                l=[]
+                #List of separated tracks
+                for k, content in enumerate(sep_tracks):
                     content_type2, content_string2 = content.split(",")
                     decoded2 = base64.b64decode(content_string2)
                     wav_file = open("assets/temp{}.wav".format(k), "wb")
                     wav_file.write(decoded2)
-                    y_temp, sr = librosa.load('assets/temp{}.wav'.format(i), sr=None)
+                    y_temp, sr = librosa.load('assets/temp{}.wav'.format(k), sr=None, duration = duration)
+                    l.append(y_temp)
 
 
             # Instance class
             if sep_tracks is None:
-                inst = SignalSepare(y, sr, [], 'assets/'+onsets, window, hpss, hpss_margin, Notemin, Notemax,)
+                inst = SignalSepare(y, sr, [], 'assets/'+onsets, window, hpss, hpss_margin, Notemin, Notemax)
             else:
-                inst = SignalSepare(y, sr, l, 'assets/'+onsets, window, hpss, hpss_margin, Notemin, Notemax,)
+                print(len(l))
+                inst = SignalSepare(y, sr, l, 'assets/'+onsets, window, hpss, hpss_margin, Notemin, Notemax)
             # Analyse spectrale et segmentation
             inst.GlobalSpectralAnalyis()
             inst.TracksSpectralAnalyis()
 
             # Ajout de l'instance de classe à S
             S.append(inst)
-
-            # Entrée pour les accords et les transitions
 
 
 
@@ -1046,14 +1055,17 @@ def compute_descriptors(n_clicks, hidden1, hidden2, type, list_tracks):
     Input({'type': 'name_trans', 'index': ALL, 'temp':ALL},'value'),
     Input({'type': 'show_chord', 'index': ALL, 'temp':ALL},'value'),
     Input({'type': 'show_trans', 'index': ALL, 'temp':ALL},'value'),
+    Input('selected_descr1', 'options'),
     Input('hidden_compute_descr', 'children'))
-def compute_dataframe(n_clicks, type, names_audio, name_chords, name_trans, show_chords, show_trans, hidden):
+def compute_dataframe(n_clicks, type, names_audio, name_chords, name_trans, show_chords, show_trans, hidden1, hidden2):
     global df, S
     if n_clicks == 0:
         df = None
     else:
         # List of descriptors to compute
         global space
+        print('Space:')
+        print(space)
         frames = []
         # Dataframe of tracks
         j = 0
@@ -1061,6 +1073,8 @@ def compute_dataframe(n_clicks, type, names_audio, name_chords, name_trans, show
             dict={}
             for descr in space:
                 dict[descr]=getattr(S[i], descr)
+                print(descr)
+                print(len(dict[descr]))
             # Number of verticalities or transitions
             L = len(dict[space[0]])
             if type=='static':
