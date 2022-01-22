@@ -9,7 +9,7 @@ import dash
 from dash import dcc, html, dash_table, Input, Output, State, MATCH, ALL
 from dash.exceptions import PreventUpdate
 import dash_daq as daq
-# import dash_bootstrap_components as dbc
+import dash_bootstrap_components as dbc
 import plotly.express as px
 import pandas as pd
 import numpy as np
@@ -493,8 +493,11 @@ class SignalSepare:
 
 # Interface et Application
 
-external_stylesheets = ['assets/bWLwgP.css']
+# external_stylesheets = ['assets/bWLwgP.css']
 # external_stylesheets=[dbc.themes.BOOTSTRAP]
+# external_stylesheets=[dbc.themes.BOOTSTRAP, "assets/segmentation-style.css"]
+external_stylesheets=[dbc.themes.QUARTZ]
+
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.title='Harmonic Descriptors Implementation'
 
@@ -507,203 +510,233 @@ header = html.Div(
         html.H1("Harmonic descriptors")
     ]
 )
-app.layout = html.Div([
-        header,
-        html.Hr(),
 
 # Inputs
-        html.H3("Input files"),
-        html.Br(),
-        html.Div(id='tabs_input_files'),
-        dcc.Tabs(id='tabs', children=[]),
-        html.Button(id='add_audio_input', n_clicks=0, children='Add Audio input'),
-        html.Button(id='delete_audio_input', n_clicks=0, children='Delete Audio input'),
-        html.Hr(),
+input = dbc.Card(
+    id='input_box',
+    children=[
+        dbc.CardHeader(html.H5("Inputs")),
+        dbc.CardBody([
+            dbc.Tabs(id='tabs', children=[]),
+            dbc.Row([
+                dbc.Col(dbc.Button(id='add_audio_input', n_clicks=0, children='Add Audio input'), width = 2),
+                dbc.Col(dbc.Button(id='delete_audio_input', n_clicks=0, children='Delete Audio input'), width = 2)
+            ], justify = 'start')
+        ])
+    ]
+)
 
-# Paramètres de l'analyse
-        html.Div(
-            children=[
-                html.H5("Signal Processing Parameters"),
-                html.Details([
-                    html.Summary('Advanced settings'),
-                    html.Div(
-                        id='parameters_analysis',
-                        children=[
-                            html.Hr(),
-                            html.Div([
-                                html.Div('Minimal pitch', style={'display': 'inline-block'}),
+
+signal_box = dbc.Card(
+    id="signal_box",
+    children=[
+        dbc.CardHeader(html.H5("Signal Processing Parameters")),
+        dbc.CardBody([
+            html.Details([
+                html.Summary('Advanced settings'),
+                dbc.Col(
+                    id='parameters_analysis',
+                    children=[
+                        html.Br(),
+
+                        dbc.Row([
+                            dbc.Col([
+                                html.Div('Minimal pitch'),
                                 dcc.Dropdown(
                                     id='notemin',
                                     options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
                                     value='C1',
-                                    style={'width':'30%'}
                                 )
-                            ]),
-                            html.Div([
-                                html.Div('Maximal pitch', style={'display': 'inline-block'}),
+                            ], width = 3),
+                            dbc.Col([
+                                html.Div('Maximal pitch'),
                                 dcc.Dropdown(
                                     id='notemax',
                                     options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
                                     value='C9',
-                                    style={'width':'30%'}
                                 )
-                            ]),
+                            ], width = 3),
 
+                        ]),
 
-                            html.Div([html.A('More details', href='https://librosa.org/doc/main/generated/librosa.note_to_hz.html#', target='_blank')]),
-                            html.Br(),
+                        dbc.Row([
+                            dbc.Col([
+                                html.Div([html.A('More details', href='https://librosa.org/doc/main/generated/librosa.note_to_hz.html#', target='_blank')]),
+                                html.Br(),
 
-                            html.Div('Window shape'),
-                            dcc.Dropdown(
-                                id='window',
-                                options=[{'label': fun[0].upper()+fun[1:], 'value': fun} for fun in list_window],
-                                value='hann',
-                                style={'width':'50%'}
-                            ),
-                            html.Div([html.A('More details', href='https://docs.scipy.org/doc/scipy/reference/signal.windows.html', target='_blank')]),
-                            html.Br(),
-                            html.Div('Reduction of percussive part'),
-                            daq.BooleanSwitch(id='hpss', on=False, style={'float':'left'}),
-                            html.Br(),
-                            html.Div(
-                                id = 'hpss_show',
-                                children=[
-                                    html.Div("Margin"),
-                                    dcc.Slider(
-                                        id='hpss_margin',
-                                        min=1, max=20, step=1, value=1,
-                                        tooltip={"placement": "bottom", "always_visible": True}
-                                    )
-                                ],
-                            ),
-                            html.Div([html.A('More details', href='https://librosa.org/doc/main/generated/librosa.decompose.hpss.html', target='_blank')]),
-                            html.Hr(),
-                        ]
-                    ),
-                    # dcc.Store(id='mem_window'),
-                    # dcc.Store(id='mem_hpss'),
-                    # dcc.Store(id='mem_hpss_margin')
-                ]),
-            ]
-        ),
+                                html.Div('Window shape'),
+                                dcc.Dropdown(
+                                    id='window',
+                                    options=[{'label': fun[0].upper()+fun[1:], 'value': fun} for fun in list_window],
+                                    value='hann',
+                                    style={'width':'50%'}
+                                ),
+                                html.Div([html.A('More details', href='https://docs.scipy.org/doc/scipy/reference/signal.windows.html', target='_blank')]),
+                                html.Br(),
+                                dbc.Switch(id='hpss', value=False,label = 'Reduction of percussive part'),
+                                html.Br(),
+                                html.Div(
+                                    id = 'hpss_show',
+                                    children=[
+                                        html.Div("Margin"),
+                                        dcc.Slider(
+                                            id='hpss_margin',
+                                            min=1, max=20, step=1, value=1,
+                                            tooltip={"placement": "bottom", "always_visible": True}
+                                        )
+                                    ],
+                                ),
+                                html.Div([html.A('More details', href='https://librosa.org/doc/main/generated/librosa.decompose.hpss.html', target='_blank')]),
+                            ])
+                        ])
 
-# Paramètres des descripteurs
-        html.Div(
-            id='parameters_descriptors',
-            children=[
-                html.H5("Descriptors Parameters"),
-                html.Details([
-                    html.Summary('Advanced settings'),
-                    html.Div('Contents')
-                ]),
-            ]
-        ),
-        html.Hr(),
-
-# Calcul des descripteurs
-        html.Div(
-            id='compute',
-            children=[
-                html.H3("Descriptors"),
-                dcc.RadioItems(
-                    id='compute_type',
-                    options=[
-                        {'label': 'Static descriptors', 'value': 'static'},
-                        {'label': 'Dynamic descriptors', 'value': 'dynamic'},
-                        {'label': 'All descriptors', 'value': 'all_descriptors'}
-                    ],
-                    value='static'
-                ),
-                html.Br(),
-                html.Button(id='compute_button', n_clicks=0, children='Compute descriptors'),
-                dcc.Loading(
-                    id="loading-1",
-                    type="default",
-                    children=html.Div(id='hidden_compute_descr', style={'display':'none'})
-                ),
-                dcc.Loading(
-                    id="loading-2",
-                    type="default",
-                    children=html.Div(id='hidden_new_class', style={'display':'none'})
-                ),
-                dcc.Loading(
-                    id="loading-3",
-                    type="circle",
-                    children=html.Div(id='hidden_chords_and_trans', style={'display':'none'})
-                )
-            ]
-        ),
-        html.Hr(),
-
-# Options de visulisation
-        html.Div(
-            id='vis_options',
-            children=[
-                html.H3("Visualisation options"),
-                html.Div([
-                    html.Span('Visualise Trajectories'),
-                    daq.BooleanSwitch(id='vis_trajectories', on=True, style={'float':'left'})
-                    ],
-                    id='vis_trajectories_display'),
-                html.Br(),
-                html.Div(
-                    id='vis_descr_type',
-                    children=[
-                        html.Big('Type of descriptors'),
-                        dcc.RadioItems(
-                            id='vis_descr_type_radio',
-                            options=[
-                                {'label':'Static','value':'static'},
-                                {'label':'Dynamic','value':'dynamic'}
-                            ],
-                            value='static',
-                            labelStyle={'display':'inline-block'}
-                        )
-                    ],
-                    style={'display':'none'}
-                ),
-                html.Div(
-                    id='vis_descr',
-                    children=[
-                        dcc.Dropdown(
-                            id='selected_descr1',
-                            options=[{'label': descrNames[descr], 'value': descr} for descr in descrList['static']],
-                            placeholder="Select a {} descriptor for axe x".format('static'),
-                            style={'width':'50%'}
-                        ),
-                        html.Br(),
-                        dcc.Dropdown(
-                            id='selected_descr2',
-                            options=[{'label': descrNames[descr], 'value': descr} for descr in descrList['static']],
-                            placeholder="Select a {} descriptor for axe y".format('static'),
-                            style={'width':'50%'}
-                        )
                     ]
                 ),
-                html.Br(),
-                html.Div([
-                    html.Div('Rescale axes for every audio', style={'display':'inline-block'}),
-                    daq.BooleanSwitch(id='normalisation', on=False, style={'float':'left', 'display':'inline-block'})
-                    ]),
-                html.Br(),
-                html.Details([
-                    html.Summary('Advanced options'),
-                    dcc.Tabs(id='tabs_visualise', children=[])
-                ])
-            ]
-        ),
-        html.Div(id='hidden_dataframe',style={'display':'none'}),#, style={‘display’:‘none’})
-        html.Hr(),
-        html.Div(id='visualisation')
+                # dcc.Store(id='mem_window'),
+                # dcc.Store(id='mem_hpss'),
+                # dcc.Store(id='mem_hpss_margin')
+            ])
+        ])
+]
+)
+
+descriptors_box = dbc.Card(
+    id= 'descriptors_box',
+    children=[
+        dbc.CardHeader(html.H5("Descriptors")),
+        dbc.CardBody([
+            html.Div(
+                id='compute',
+                children=[
+                    dbc.RadioItems(
+                        id='compute_type',
+                        options=[
+                            {'label': 'Static descriptors', 'value': 'static'},
+                            {'label': 'Dynamic descriptors', 'value': 'dynamic'},
+                            {'label': 'All descriptors', 'value': 'all_descriptors'}
+                        ],
+                        value='static'
+                    ),
+                    html.Br(),
+                    dbc.Row(
+                        dbc.Col(dbc.Button(id='compute_button', n_clicks=0, children='Compute descriptors', size='lg'), width=2),
+                        justify='around'
+                    )
+                ]
+            )
+        ])
     ]
 )
+
+
+visualisation_option_box = dbc.Card(
+    id= 'visualisation_option_box',
+    children=[
+        dbc.CardHeader(html.H5("Visualisation options")),
+        dbc.CardBody([
+            html.Div(
+                id='vis_options',
+                children=[
+                    dbc.Switch(id='vis_trajectories', value=True, label = 'Visualise trajectories'),
+                    html.Br(),
+                    html.Div(
+                        id='vis_descr_type',
+                        children=[
+                            html.Big('Type of descriptors'),
+                            dbc.RadioItems(
+                                id='vis_descr_type_radio',
+                                options=[
+                                    {'label':'Static','value':'static'},
+                                    {'label':'Dynamic','value':'dynamic'}
+                                ],
+                                value='static',
+                                labelStyle={'display':'inline-block'}
+                            )
+                        ],
+                        style={'display':'none'}
+                    ),
+                    html.Div(
+                        id='vis_descr',
+                        children=[
+                            dcc.Dropdown(
+                                id='selected_descr1',
+                                options=[{'label': descrNames[descr], 'value': descr} for descr in descrList['static']],
+                                placeholder="Select a {} descriptor for axe x".format('static')
+                            ),
+                            html.Br(),
+                            dcc.Dropdown(
+                                id='selected_descr2',
+                                options=[{'label': descrNames[descr], 'value': descr} for descr in descrList['static']],
+                                placeholder="Select a {} descriptor for axe y".format('static')
+                            )
+                        ]
+                    ),
+                    html.Br(),
+                    dbc.Switch(id='normalisation', value=False, label = 'Rescale axes for every audio'),
+                    html.Br(),
+                    html.Details([
+                        html.Summary('Advanced options'),
+                        dbc.Tabs(id='tabs_visualise', children=[])
+                    ])
+                ]
+            ),
+        ])
+    ]
+)
+
+
+parameters = [
+    signal_box,
+    html.Br(),
+    descriptors_box,
+    html.Br(),
+    visualisation_option_box,
+]
+
+loadings = [
+    dcc.Loading(
+        id="loading-1",
+        children=html.Div(id='hidden_compute_descr', style={'display':'none'})
+    ),
+    dcc.Loading(
+        id="loading-2",
+        children=html.Div(id='hidden_new_class', style={'display':'none'})
+    ),
+    dcc.Loading(
+        id="loading-3",
+        children=html.Div(id='hidden_chords_and_trans', style={'display':'none'})
+    )
+
+]
+
+
+graph = [html.Div(id='visualisation'), html.Div(id='hidden_dataframe',style={'display':'none'})]
+
+
+app.layout = html.Div([
+    dbc.Container([
+        dbc.Row([
+            dbc.Col(html.Img(src=app.get_asset_url("iremus-logo.png"), className="logo")),
+            dbc.Col(html.H2("Harmonic descriptors app"))
+        ]),
+        dbc.Row(dbc.Col(input)),
+        html.Br(),
+        dbc.Row(
+            id= 'main_row',
+            children = [dbc.Col(parameters, md=4), dbc.Col(loadings + graph, md=8)]
+        ),
+        html.Br(),
+    ], fluid=True)
+])
+
+
 
 # Add or delete audio
 @app.callback(
     Output('tabs','children'),
-    Output('tabs','value'),
+    Output('tabs','active_tab'),
     Output('tabs_visualise','children'),
-    Output('tabs_visualise','value'),
+    Output('tabs_visualise','active_tab'),
     Output('add_audio_input', 'n_clicks'),
     Input('add_audio_input', 'n_clicks'),
     Input('delete_audio_input', 'n_clicks'),
@@ -711,58 +744,82 @@ app.layout = html.Div([
     State('tabs_visualise','children'))
 def add_del_tab(add_audio, del_audio, children, children_vis):
     ctx = dash.callback_context
-    new_tab = dcc.Tab(
+    new_tab = dbc.Tab(
         label='Audio {}'.format(add_audio + 1),
-        value='Audio {}'.format(add_audio + 1),
+        tab_id='Audio {}'.format(add_audio + 1),
         id={'type': 'audio', 'index': add_audio + 1},
         # children='Input audio n°{}'.format(add_audio + 1)
         children=[
-            html.Div([
-                html.Div(id={'type': 'change_name', 'index': add_audio + 1}, style={'display':'none'}, children=[
-                    html.Div('Change the title:'),
-                    dcc.Input(id={'type': 'name_audio', 'index': add_audio + 1}, type='text')]),
-                html.P(),
-                html.Big('Main sound file {}'.format(add_audio + 1)),
-                dcc.Upload(
-                    id={'type': 'main_sound', 'index': add_audio + 1},
-                    children=html.Div(['Drag and drop or ', html.A('Select File')]),
-                    style={'width': '30%','height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px','display': 'inline-block'},
+            dbc.Container([
+                # dbc.Row(Input(placeholder = 'Ici va le nom de input')),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [html.Br(), html.P('Change the title:')],
+                            width = 'auto',
+                            align='below',
+                            id={'type': 'change_name_bis', 'index': add_audio + 1},
+                            style={'display':'none'}
+                        ),
 
-                    multiple=False,
-                    filename=''
+                        # dbc.Col([html.Div('hozufzoffougef')]),
+                        # dbc.Col([html.Div('hozufzoffougef')]),
+                        dbc.Col(
+                            [
+                                html.Br(),
+                                dbc.Input(id={'type': 'name_audio', 'index': add_audio + 1}, type='text'),
+                            ],
+                            width = 3,
+                            id={'type': 'change_name', 'index': add_audio + 1},
+                            style={'display':'none'},
+                            align='center'
+                        )
+                    ]
                 ),
-                html.Div(id={'type': 'input1', 'index': add_audio + 1})
-            ]),
+                dbc.Row([
+                    dbc.Col([
+                        html.Big('Main sound file {}'.format(add_audio + 1), style={'textAlign': 'center'}),
+                        dcc.Upload(
+                            id={'type': 'main_sound', 'index': add_audio + 1},
+                            children=html.Div(['Drag and drop or ', html.A('Select File')]),
+                            style={'height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px'},
+                            multiple=False,
+                            filename=''
+                        ),
+                        html.Div(id={'type': 'input1', 'index': add_audio + 1}),
+                        html.Div(id={'type': 'sound', 'index': add_audio + 1})
+                    ], width=4),
+                    dbc.Col([
+                        html.Big('Separated audio tracks'.format(add_audio + 1)),
+                        dcc.Upload(
+                            id={'type': 'tracks', 'index': add_audio + 1},
+                            children=html.Div(['Drag and drop or ', html.A('Select File')]),
+                            style={'height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px'},
+                            # Allow multiple files to be uploaded
+                            multiple=True
+                        ),
+                        html.Div(id={'type': 'input2', 'index': add_audio + 1}),
+                    ], width=4),
+                    dbc.Col([
+                        html.Big('Onsets'.format(add_audio + 1)),
+                        dcc.Upload(
+                            id={'type': 'onsets', 'index': add_audio + 1},
+                            children=html.Div(['Drag and drop or ', html.A('Select File')]),
+                            style={'height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px'},
+                            # Allow multiple files to be uploaded
+                            multiple=False
+                        ),
+                        html.Div(id={'type': 'input3', 'index': add_audio + 1})
+                    ], width=4),
+                ]),
 
-            html.Div([
-                html.Big('Separated audio tracks'),
-                dcc.Upload(
-                    id={'type': 'tracks', 'index': add_audio + 1},
-                    children=html.Div(['Drag and drop or ', html.A('Select File')]),
-                    style={'width': '30%','height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px','display': 'inline-block'},
-                    # Allow multiple files to be uploaded
-                    multiple=True
-                ),
-                html.Div(id={'type': 'input2', 'index': add_audio + 1})
-            ]),
-
-            html.Div([
-                html.Big('Onsets'),
-                dcc.Upload(
-                    id={'type': 'onsets', 'index': add_audio + 1},
-                    children=html.Div(['Drag and drop or ', html.A('Select File')]),
-                    style={'width': '30%','height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px','display': 'inline-block'},
-                    multiple=False
-                ),
-                html.Div(id={'type': 'input3', 'index': add_audio + 1})
-            ]),
-            html.Div(id={'type': 'sound', 'index': add_audio + 1})
+            ], fluid = True),
         ]
     )
 
-    new_tab_vis = dcc.Tab(
+    new_tab_vis = dbc.Tab(
         label='Audio {}'.format(add_audio + 1),
-        value='Audio {}'.format(add_audio + 1),
+        tab_id='Audio {}'.format(add_audio + 1),
         id={'type': 'audio_chords', 'index': add_audio + 1}
     )
 
@@ -792,12 +849,13 @@ def cache_button(add_audio):
     Output({'type': 'sound', 'index': MATCH},'children'),
     Output({'type': 'name_audio', 'index': MATCH},'value'),
     Output({'type': 'change_name', 'index': MATCH},'style'),
+    Output({'type': 'change_name_bis', 'index': MATCH},'style'),
     Input({'type': 'main_sound', 'index': MATCH}, 'filename'))
 def set_name_main(filename):
     if isinstance(filename, str) and len(filename)>4:
-        return html.I(filename), html.Audio(src='assets/temp.wav', controls=True),filename.split('.')[0], {'display':'inline-block'}
+        return html.I(filename), [html.Audio(src='assets/temp.wav', controls=True), html.Br()], filename.split('.')[0], {'display':'inline-block'}, {'display':'inline-block'}
     else:
-        return None, None, None, {'display':'none'}
+        return None, None, None, {'display':'none'}, {'display':'none'}
 
 
 # Input tracks
@@ -866,7 +924,7 @@ def set_type_descr_3(type_d, list_tracks):
 # Hpss_margin
 @app.callback(
     Output('hpss_show','style'),
-    Input('hpss', 'on'))
+    Input('hpss', 'value'))
 def set_margin(hpss):
     if hpss:
         return {'display':'inline-block','width':'50%'}
@@ -884,7 +942,7 @@ def set_margin(hpss):
     State({'type': 'tracks', 'index': ALL},'contents'),
     State({'type': 'onsets', 'index': ALL},'filename'),
     State('window','value'),
-    State('hpss','on'),
+    State('hpss','value'),
     State('hpss_margin','value'),
     State('notemin','value'),
     State('notemax','value'))
@@ -942,46 +1000,73 @@ def set_class_instance(n_clicks, list_main, list_sep_tracks, list_onsets, window
 
         # # Entrée pour les accords et les transitions
         liste_children = [
-            html.Div([
-                html.Div([html.Big('List of verticalities (chords):')] + [
-                    html.Div([
-                        dcc.Input(
-                            id={'type': 'name_chord', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1), style={'display': 'inline-block'}
-                        ),
-                        dcc.RadioItems(
-                            id={'type': 'show_chord', 'index': i+1,'temp': k+1},
-                            options=[
-                                {'label': 'Show', 'value': 1},
-                                {'label': 'Hide', 'value': 0},
-                            ],
-                            value=1,
-                            labelStyle={'display': 'inline-block'},
-                            style={'display': 'inline-block'}
-                        )
-                    ])
-                    for k in range(S[i].n_frames - 2)
-                ], id={'type': 'liste_chords', 'index': i+1}),
+            [
+                dbc.Container(
+                    [dbc.Row(dbc.Col([html.Br(), html.Big('List of verticalities (chords):'), html.Br()]))] + [
+                        dbc.Row([
+                            dbc.Col(
+                                dbc.Input(
+                                    id={'type': 'name_chord', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1)
+                                )
+                            ),
+                            dbc.Col(
+                                dbc.RadioItems(
+                                    id={'type': 'show_chord', 'index': i+1,'temp': k+1},
+                                    options=[
+                                        {'label': 'Show', 'value': 1},
+                                        {'label': 'Hide', 'value': 0},
+                                    ],
+                                    value=1,
+                                    inline=True
+                                )
+                            )
+                        ])
+                        for k in range(S[i].n_frames - 2)
+                    ], id={'type': 'liste_chords', 'index': i+1}),
 
-                html.Div([html.Big('List of transitions:')] + [
-                    html.Div([
-                        dcc.Input(
-                            id={'type': 'name_trans', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1), style={'display': 'inline-block'}
-                        ),
-                        dcc.RadioItems(
-                            id={'type': 'show_trans', 'index': i+1,'temp': k+1},
-                            options=[
-                                {'label': 'Show', 'value': 1},
-                                {'label': 'Hide', 'value': 0},
-                            ],
-                            value=1,
-                            labelStyle={'display': 'inline-block'},
-                            style={'display': 'inline-block'}
-                        )
-                    ])
-                    for k in range(S[i].n_frames - 3)
-                ], id={'type': 'liste_trans', 'index': i+1})
-            ])
+                dbc.Container(
+                    [dbc.Row(dbc.Col([html.Br(), html.Big('List of transitions:'), html.Br()]))] + [
+                        dbc.Row([
+                            dbc.Col(
+                                dbc.Input(
+                                    id={'type': 'name_trans', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1)
+                                )
+                            ),
+                            dbc.Col(
+                                dbc.RadioItems(
+                                    id={'type': 'show_trans', 'index': i+1,'temp': k+1},
+                                    options=[
+                                        {'label': 'Show', 'value': 1},
+                                        {'label': 'Hide', 'value': 0},
+                                    ],
+                                    value=1,
+                                    inline=True
+                                )
+                            )
+                        ])
+                        for k in range(S[i].n_frames - 3)
+                    ], id={'type': 'liste_trans', 'index': i+1}),
 
+            #     html.Div([html.Big('List of transitions:')] + [
+            #         html.Div([
+            #             dcc.Input(
+            #                 id={'type': 'name_trans', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1), style={'display': 'inline-block'}
+            #             ),
+            #             dbc.RadioItems(
+            #                 id={'type': 'show_trans', 'index': i+1,'temp': k+1},
+            #                 options=[
+            #                     {'label': 'Show', 'value': 1},
+            #                     {'label': 'Hide', 'value': 0},
+            #                 ],
+            #                 value=1,
+            #                 labelStyle={'display': 'inline-block'},
+            #                 style={'display': 'inline-block'}
+            #             )
+            #         ])
+            #         for k in range(S[i].n_frames - 3)
+            #     ], id={'type': 'liste_trans', 'index': i+1})
+            # ])
+            ]
             for i in range(len(S))
         ]
 
@@ -1073,8 +1158,7 @@ def compute_dataframe(n_clicks, type, names_audio, name_chords, name_trans, show
             dict={}
             for descr in space:
                 dict[descr]=getattr(S[i], descr)
-                print(descr)
-                print(len(dict[descr]))
+
             # Number of verticalities or transitions
             L = len(dict[space[0]])
             if type=='static':
@@ -1087,6 +1171,7 @@ def compute_dataframe(n_clicks, type, names_audio, name_chords, name_trans, show
             dict['audio']=[names_audio[i] for k in range(L)]
             df_track = pd.DataFrame(dict)
             frames.append(df_track)
+
         # Concatenate
         df = pd.concat(frames)
         print(df)
@@ -1101,8 +1186,8 @@ def compute_dataframe(n_clicks, type, names_audio, name_chords, name_trans, show
     Input('compute_button', 'n_clicks'),
     Input('selected_descr1','value'),
     Input('selected_descr2','value'),
-    Input('vis_trajectories', 'on'),
-    Input('normalisation', 'on'),
+    Input('vis_trajectories', 'value'),
+    Input('normalisation', 'value'),
     Input('vis_descr', 'children'),
     Input('hidden_dataframe', 'children'),
     Input('hidden_compute_descr', 'children'))
@@ -1114,10 +1199,11 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hid
             global df
             global space
 
-            # Normalisation des descripteurs
+            # Sélection des descripteurs à représenter et normalisation des descripteurs
 
             if not norm:
                 df_norm = df.copy()
+                df_norm = df_norm[df_norm['show']==1]
                 for descr in space:
                     max = df_norm[descr].max()
                     min = df_norm[descr].min()
@@ -1129,23 +1215,21 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hid
                 audios = list(set(audios))
                 frames = []
                 for i in audios:
-                    print('la boucle est là !')
-                    fr = df[df['audio']==i]
+                    fr = df[(df['audio']==i) & df['show']==1]
                     for descr in space:
-                        max = df[df['audio']==i][descr].max()
-                        min = df[df['audio']==i][descr].min()
+                        max = fr[descr].max()
+                        min = fr[descr].min()
                         if (max-min)!= 0:
                             fr[descr] = (fr[descr] - min) / (max-min)
                     frames.append(fr)
                 df_norm = pd.concat(frames)
 
 
-            # Selection des points à montrer
-            df_plot = df_norm[df_norm['show']==1]
+            # Représentations
 
             if traj:
                 fig = px.line(
-                    df_plot, x=descr1, y=descr2, text='index', color='audio',
+                    df_norm, x=descr1, y=descr2, text='index', color='audio',
                     hover_data={
                         'audio':False,
                         descr1:':.2f',
@@ -1154,7 +1238,7 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hid
                 )
             else:
                 fig = px.scatter(
-                    df_plot, x=descr1, y=descr2, text='index', color='audio',
+                    df_norm, x=descr1, y=descr2, text='index', color='audio',
                     hover_data={
                         'audio':False,
                         descr1:':.2f',
@@ -1164,15 +1248,27 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hid
             fig.update_traces(textposition="bottom right")
             fig.update_xaxes(title_text=descrNames[descr1])
             fig.update_yaxes(title_text=descrNames[descr2])
+            fig.update_layout(
+                autosize=True,
+                width=900,
+                height= 700,
+                margin=dict(l=0, r=0, b=0, t=0,),
+            )
+
+            print('Figure Layout : ')
+            print(fig.layout.width)
+            print(fig.layout.height)
+
+
 
             return dcc.Graph(
                 id='example-graph',
                 figure=fig,
-                style={
-                    'width': '600px',
-                    'height': '500px',
-                    'lineHeight': '30px'
-                },
+                # style={
+                #     'width': '600px',
+                #     'height': '500px',
+                #     'lineHeight': '30px'
+                # },
             )
 
 
