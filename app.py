@@ -497,19 +497,11 @@ class SignalSepare:
 # external_stylesheets=[dbc.themes.BOOTSTRAP]
 # external_stylesheets=[dbc.themes.BOOTSTRAP, "assets/segmentation-style.css"]
 external_stylesheets=[dbc.themes.QUARTZ]
+# external_stylesheets=[dbc.themes.SUPERHERO]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.title='Harmonic Descriptors Implementation'
 
-
-
-header = html.Div(
-    id="app-header",
-    children=[
-        html.Img(src=app.get_asset_url("iremus-logo.png"), className="logo"),
-        html.H1("Harmonic descriptors")
-    ]
-)
 
 # Inputs
 input = dbc.Card(
@@ -542,20 +534,20 @@ signal_box = dbc.Card(
                         dbc.Row([
                             dbc.Col([
                                 html.Div('Minimal pitch'),
-                                dcc.Dropdown(
+                                dbc.Select(
                                     id='notemin',
                                     options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
                                     value='C1',
                                 )
-                            ], width = 3),
+                            ], width = 4),
                             dbc.Col([
                                 html.Div('Maximal pitch'),
-                                dcc.Dropdown(
+                                dbc.Select(
                                     id='notemax',
                                     options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
                                     value='C9',
                                 )
-                            ], width = 3),
+                            ], width = 4),
 
                         ]),
 
@@ -565,10 +557,11 @@ signal_box = dbc.Card(
                                 html.Br(),
 
                                 html.Div('Window shape'),
-                                dcc.Dropdown(
+                                dbc.Select(
                                     id='window',
                                     options=[{'label': fun[0].upper()+fun[1:], 'value': fun} for fun in list_window],
                                     value='hann',
+                                    size = 'lg',
                                     style={'width':'50%'}
                                 ),
                                 html.Div([html.A('More details', href='https://docs.scipy.org/doc/scipy/reference/signal.windows.html', target='_blank')]),
@@ -658,15 +651,17 @@ visualisation_option_box = dbc.Card(
                     html.Div(
                         id='vis_descr',
                         children=[
-                            dcc.Dropdown(
+                            dbc.Select(
                                 id='selected_descr1',
                                 options=[{'label': descrNames[descr], 'value': descr} for descr in descrList['static']],
+                                size = 'lg',
                                 placeholder="Select a {} descriptor for axe x".format('static')
                             ),
                             html.Br(),
-                            dcc.Dropdown(
+                            dbc.Select(
                                 id='selected_descr2',
                                 options=[{'label': descrNames[descr], 'value': descr} for descr in descrList['static']],
+                                size = 'lg',
                                 placeholder="Select a {} descriptor for axe y".format('static')
                             )
                         ]
@@ -716,9 +711,9 @@ graph = [html.Div(id='visualisation'), html.Div(id='hidden_dataframe',style={'di
 app.layout = html.Div([
     dbc.Container([
         dbc.Row([
-            dbc.Col(html.Img(src=app.get_asset_url("iremus-logo.png"), className="logo")),
-            dbc.Col(html.H2("Harmonic descriptors app"))
-        ]),
+            dbc.Col(html.Img(src=app.get_asset_url("iremus-logo.png"), className="logo"),width=3),
+            dbc.Col(html.H2("Harmonic descriptors app",style={'color':'white'}), align='center',width=5),
+        ], justify='start'),
         dbc.Row(dbc.Col(input)),
         html.Br(),
         dbc.Row(
@@ -767,7 +762,7 @@ def add_del_tab(add_audio, del_audio, children, children_vis):
                         dbc.Col(
                             [
                                 html.Br(),
-                                dbc.Input(id={'type': 'name_audio', 'index': add_audio + 1}, type='text'),
+                                dbc.Input(id={'type': 'name_audio', 'index': add_audio + 1}, size='lg'),
                             ],
                             width = 3,
                             id={'type': 'change_name', 'index': add_audio + 1},
@@ -781,7 +776,7 @@ def add_del_tab(add_audio, del_audio, children, children_vis):
                         html.Big('Main sound file {}'.format(add_audio + 1), style={'textAlign': 'center'}),
                         dcc.Upload(
                             id={'type': 'main_sound', 'index': add_audio + 1},
-                            children=html.Div(['Drag and drop or ', html.A('Select File')]),
+                            children=html.Div(['Drag and drop or ', html.A(html.B(html.U('Select File')))]),
                             style={'height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px'},
                             multiple=False,
                             filename=''
@@ -793,7 +788,7 @@ def add_del_tab(add_audio, del_audio, children, children_vis):
                         html.Big('Separated audio tracks'.format(add_audio + 1)),
                         dcc.Upload(
                             id={'type': 'tracks', 'index': add_audio + 1},
-                            children=html.Div(['Drag and drop or ', html.A('Select File')]),
+                            children=html.Div(['Drag and drop or ', html.A(html.B(html.U('Select File')))]),
                             style={'height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px'},
                             # Allow multiple files to be uploaded
                             multiple=True
@@ -804,7 +799,7 @@ def add_del_tab(add_audio, del_audio, children, children_vis):
                         html.Big('Onsets'.format(add_audio + 1)),
                         dcc.Upload(
                             id={'type': 'onsets', 'index': add_audio + 1},
-                            children=html.Div(['Drag and drop or ', html.A('Select File')]),
+                            children=html.Div(['Drag and drop or ', html.A(html.B(html.U('Select File')))]),
                             style={'height': '40px','lineHeight': '30px','borderWidth': '1px','borderStyle': 'dashed','borderRadius': '5px','textAlign': 'center','margin': '10px'},
                             # Allow multiple files to be uploaded
                             multiple=False
@@ -1006,7 +1001,7 @@ def set_class_instance(n_clicks, list_main, list_sep_tracks, list_onsets, window
                         dbc.Row([
                             dbc.Col(
                                 dbc.Input(
-                                    id={'type': 'name_chord', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1)
+                                    id={'type': 'name_chord', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1), size='lg'
                                 )
                             ),
                             dbc.Col(
@@ -1029,7 +1024,7 @@ def set_class_instance(n_clicks, list_main, list_sep_tracks, list_onsets, window
                         dbc.Row([
                             dbc.Col(
                                 dbc.Input(
-                                    id={'type': 'name_trans', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1)
+                                    id={'type': 'name_trans', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1), size='lg'
                                 )
                             ),
                             dbc.Col(
@@ -1047,25 +1042,7 @@ def set_class_instance(n_clicks, list_main, list_sep_tracks, list_onsets, window
                         for k in range(S[i].n_frames - 3)
                     ], id={'type': 'liste_trans', 'index': i+1}),
 
-            #     html.Div([html.Big('List of transitions:')] + [
-            #         html.Div([
-            #             dcc.Input(
-            #                 id={'type': 'name_trans', 'index': i+1, 'temp':k+1}, value='{}'.format(k+1), style={'display': 'inline-block'}
-            #             ),
-            #             dbc.RadioItems(
-            #                 id={'type': 'show_trans', 'index': i+1,'temp': k+1},
-            #                 options=[
-            #                     {'label': 'Show', 'value': 1},
-            #                     {'label': 'Hide', 'value': 0},
-            #                 ],
-            #                 value=1,
-            #                 labelStyle={'display': 'inline-block'},
-            #                 style={'display': 'inline-block'}
-            #             )
-            #         ])
-            #         for k in range(S[i].n_frames - 3)
-            #     ], id={'type': 'liste_trans', 'index': i+1})
-            # ])
+
             ]
             for i in range(len(S))
         ]
@@ -1178,6 +1155,14 @@ def compute_dataframe(n_clicks, type, names_audio, name_chords, name_trans, show
         print('Dataframe computed')
         return 'Dataframe computed'
 
+# Name_chord
+@app.callback(
+    Output({'type': 'name_chord', 'index': MATCH, 'temp':MATCH},'disabled'),
+    Input({'type': 'show_chord', 'index': MATCH, 'temp':MATCH},'value'))
+def disabled_name_chord(value):
+    if value==0:
+        return True
+    else: return False
 
 
 # Visualisation
