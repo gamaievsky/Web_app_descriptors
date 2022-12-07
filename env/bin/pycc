@@ -1,0 +1,3 @@
+#!/Users/manuel/Github/Web_app_descriptors/env/bin/python3
+from numba.pycc import main
+main()

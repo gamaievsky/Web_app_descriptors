@@ -1,5 +1,4 @@
-
-# Distribution / packaging
-env/
-assets/
+venv
+*.pyc
 .DS_Store
+.env
