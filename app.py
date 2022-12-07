@@ -168,9 +168,9 @@ class SignalSepare:
             T_ret = 1.5 / (f * (2**(1.0/(12*4)) - 1))
             for j in range(self.n_frames):
                 if T_ret < (self.onset_times[j+1] - self.onset_times[j+1]) - Δmin:
-                    self.chromSync[i,j] = np.median(self.Chrom[i][(self.onset_frames[j]+int(librosa.time_to_frames(T_ret, sr=self.sr, hop_length = STEP))):(self.onset_frames[j+1])])
+                    self.chromSync[i,j] = np.mean(self.Chrom[i][(self.onset_frames[j]+int(librosa.time_to_frames(T_ret, sr=self.sr, hop_length = STEP))):(self.onset_frames[j+1])])
                 else:
-                    self.chromSync[i,j] = np.median(self.Chrom[i][(self.onset_frames[j+1]-int(librosa.time_to_frames(Δmin, sr=self.sr, hop_length = STEP))):(self.onset_frames[j+1])])
+                    self.chromSync[i,j] = np.mean(self.Chrom[i][(self.onset_frames[j+1]-int(librosa.time_to_frames(Δmin, sr=self.sr, hop_length = STEP))):(self.onset_frames[j+1])])
 
 
         self.chromSync[np.isnan(self.chromSync)] = 0
@@ -221,9 +221,9 @@ class SignalSepare:
                 for k in range(self.n_pistes):
                     for j in range(self.n_frames):
                         if T_ret < (self.onset_times[j+1] - self.onset_times[j+1]) - Δmin:
-                            self.chromPistesSync[k][i,j] = np.median(ChromPistes[k][i][(self.onset_frames[j]+int(librosa.time_to_frames(T_ret, sr=self.sr, hop_length = STEP))):(self.onset_frames[j+1])])
+                            self.chromPistesSync[k][i,j] = np.mean(ChromPistes[k][i][(self.onset_frames[j]+int(librosa.time_to_frames(T_ret, sr=self.sr, hop_length = STEP))):(self.onset_frames[j+1])])
                         else:
-                            self.chromPistesSync[k][i,j] = np.median(ChromPistes[k][i][(self.onset_frames[j+1]-int(librosa.time_to_frames(Δmin, sr=self.sr, hop_length = STEP))):(self.onset_frames[j+1])])
+                            self.chromPistesSync[k][i,j] = np.mean(ChromPistes[k][i][(self.onset_frames[j+1]-int(librosa.time_to_frames(Δmin, sr=self.sr, hop_length = STEP))):(self.onset_frames[j+1])])
 
 
             # Tracks energy computation
