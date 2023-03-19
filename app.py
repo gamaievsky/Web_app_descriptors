@@ -24,8 +24,8 @@ from numpy import linalg as LA
 #####################################################################################
 # Calcul
 
-descrNames = {'roughness':'Roughness', 'harmonicity':'Harmonicity', 'concordance':'Concordance', 'concordanceTot':'Concordance Totale', 'harmonicChange':'Harmonic Change', 'diffConcordance':'Differential Concordance','diffRoughness':'Differential Roughness'}
-descrList = {'static': ['roughness', 'harmonicity', 'concordance', 'concordanceTot'],'staticOneSound': ['roughness', 'harmonicity'] , 'dynamic': ['harmonicChange', 'diffConcordance', 'diffRoughness']}
+descrNames = {'roughness':'Roughness', 'harmonicity':'Harmonicity', 'harmonicityInv':'Harmonicity inverse', 'concordance':'Concordance', 'concordanceTot':'Concordance Totale', 'harmonicChange':'Harmonic Change', 'diffConcordance':'Differential Concordance','diffRoughness':'Differential Roughness'}
+descrList = {'static': ['roughness', 'harmonicity','harmonicityInv', 'concordance', 'concordanceTot'],'staticOneSound': ['roughness', 'harmonicity','harmonicityInv'] , 'dynamic': ['harmonicChange', 'diffConcordance', 'diffRoughness']}
 list_window = ['hann', 'hamming', 'blackman', 'flattop', 'boxcar', 'triang']
 
 BINS_PER_OCTAVE = 12*8
@@ -101,6 +101,7 @@ class SignalSepare:
         self.chrom_diffRoughness = []
         self.diffConcordance = []
         self.harmonicity = []
+        self.harmonicityInv = []
         self.virtualPitch = []
 
 
@@ -421,6 +422,29 @@ class SignalSepare:
         self.harmonicity = self.harmonicity[1:-1]
 
 
+    def HarmonicityInv(self):
+        # HARMONICINV SPECTRUM CONSTRUCTION
+        dec = BINS_PER_OCTAVE/6 # décalage d'un ton pour tenir compte de l'épaisseur des gaussiennes
+        epaiss = int(np.rint(BINS_PER_OCTAVE/(2*σ)))
+        SpecHarm = np.zeros(2*int(dec) + int(np.rint(BINS_PER_OCTAVE * np.log2(κ))))
+        for k in range(κ):
+            pic =  int(dec + np.rint(BINS_PER_OCTAVE * np.log2(k+1)))
+            for i in range(-epaiss, epaiss+1):
+                SpecHarm[-pic - i] = 1/(k+1)**decr
+        len_corr = self.n_bins + len(SpecHarm) - 1
+
+        # CORRELATION WITH REAL SPECTRUM
+        self.chrom_harmonicityInv = np.zeros((len_corr,self.n_frames))
+        self.harmonicityInv = []
+        norm_harmonicity = 1
+        for t in range(self.n_frames):
+            self.chrom_harmonicityInv[:,t] = np.correlate(np.power(self.chromSync[:,t],norm_harmonicity), SpecHarm,"full") / self.energy[t]**(norm_harmonicity/2.)
+            self.harmonicityInv.append(np.exp(max(self.chrom_harmonicityInv[:,t])))
+
+        self.chrom_harmonicityInv[:,0] = 0
+        self.chrom_harmonicityInv[:,self.n_frames-1] = 0
+        self.harmonicityInv = self.harmonicityInv[1:-1]
+
 
     def HarmonicChange(self):
         self.chrom_harmonicChange = np.zeros((self.n_bins,self.n_frames-1))
@@ -482,6 +506,7 @@ class SignalSepare:
         if 'concordanceTot' in space: self.ConcordanceTot()
         if 'roughness' in space: self.Roughness()
         if 'harmonicity' in space: self.Harmonicity()
+        if 'harmonicityInv' in space: self.HarmonicityInv()
         if 'harmonicChange' in space: self.HarmonicChange()
         if 'diffConcordance' in space: self.DiffConcordance()
         if 'diffRoughness' in space: self.DiffRoughness()
