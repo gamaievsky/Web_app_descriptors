@@ -305,7 +305,6 @@ class SignalSepare:
         self.concordance = self.concordance[1:-1]
 
 
-
     def ConcordanceTot(self):
         """Multiplie les spectres (cqt) des différentes pistes pour créer le spectre de concordance,
         et calcule la concordance en sommant sur les fréquences"""
@@ -388,8 +387,6 @@ class SignalSepare:
         self.chrom_roughness[:,0] = 0
         self.roughness = self.chrom_roughness.sum(axis=0)
         self.roughness=self.roughness[1:-1]
-
-
 
 
     def Harmonicity(self):
@@ -675,6 +672,7 @@ visualisation_option_box = dbc.Card(
                             ])
                         ],
                     ),
+                    dbc.Switch(id='normalisation_compare', value=False, label = 'Rescale axes for every audio'),
                     html.Br(),
                     html.Div(
                         id='vis_descr_type',
@@ -711,7 +709,6 @@ visualisation_option_box = dbc.Card(
                         ]
                     ),
                     html.Br(),
-                    dbc.Switch(id='normalisation', value=False, label = 'Rescale axes for every audio'),
                     html.Br(),
                     html.Details([
                         html.Summary('Advanced options'),
@@ -974,8 +971,16 @@ def set_margin(hpss):
 @app.callback(
     Output('normalize_show','style'),
     Input('vis_normalization', 'value'))
-def set_margin(normalize_on_off):
+def set_norm(normalize_on_off):
     if normalize_on_off:
+        return {'display':'none'}
+
+# Normalization_compare
+@app.callback(
+    Output('normalisation_compare','style'),
+    Input('vis_normalization', 'value'))
+def set_norm_on_off(norm_on_off):
+    if not norm_on_off:
         return {'display':'none'}
 
 
@@ -1223,7 +1228,8 @@ def disabled_name_chord(value):
     Input('selected_descr1','value'),
     Input('selected_descr2','value'),
     Input('vis_trajectories', 'value'),
-    Input('normalisation', 'value'),
+    Input('normalisation_compare', 'value'),
+    # Input('vis_normalization', 'value'),
     Input('vis_descr', 'children'),
     Input('hidden_dataframe', 'children'),
     Input('hidden_compute_descr', 'children'))
@@ -1236,7 +1242,6 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hid
             global space
 
             # Sélection des descripteurs à représenter et normalisation des descripteurs
-
             if not norm:
                 df_norm = df.copy()
                 df_norm = df_norm[df_norm['show']==1]
@@ -1259,6 +1264,10 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hid
                             fr[descr] = (fr[descr] - min) / (max-min)
                     frames.append(fr)
                 df_norm = pd.concat(frames)
+
+
+
+
 
 
             # Représentations
