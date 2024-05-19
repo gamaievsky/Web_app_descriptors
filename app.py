@@ -656,6 +656,25 @@ visualisation_option_box = dbc.Card(
                 id='vis_options',
                 children=[
                     dbc.Switch(id='vis_trajectories', value=True, label = 'Visualise trajectories'),
+                    dbc.Switch(id='vis_normalization', value=True, label = 'Normalize values'),
+                    dbc.Row(
+                        id = 'normalize_show',
+                        children=[
+                            dbc.Col([
+                                html.Div('x range'),
+                                html.Div('y range')
+                            ]),
+                            dbc.Col([
+                                dbc.Input(id = 'x_range_min', value = 0, size = 'lg'),
+                                dbc.Input(id = 'y_range_min', value = 0, size = 'lg'),
+
+                            ]),
+                            dbc.Col([
+                                dbc.Input(id = 'x_range_max', value = 1, size = 'lg'),
+                                dbc.Input(id = 'y_range_max', value = 1, size = 'lg'),
+                            ])
+                        ],
+                    ),
                     html.Br(),
                     html.Div(
                         id='vis_descr_type',
@@ -951,6 +970,13 @@ def set_margin(hpss):
     else:
         return {'display':'none','width':'50%'}
 
+# Normalization
+@app.callback(
+    Output('normalize_show','style'),
+    Input('vis_normalization', 'value'))
+def set_margin(normalize_on_off):
+    if normalize_on_off:
+        return {'display':'none'}
 
 
 # Instanciation de classe
