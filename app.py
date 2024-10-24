@@ -669,8 +669,13 @@ visualisation_option_box = dbc.Card(
                             dbc.Col([
                                 dbc.Input(id = 'x_range_max', value = 1, size = 'lg'),
                                 dbc.Input(id = 'y_range_max', value = 1, size = 'lg'),
-                            ])
-                        ],
+                            ]),
+                            html.Br(),
+                            dbc.Row(
+                                dbc.Col(dbc.Button(id='update_axis', n_clicks=0, children='Update axis', size='lg'), width=2),
+                                justify='around'
+                            )
+                        ]
                     ),
                     dbc.Switch(id='normalisation_compare', value=False, label = 'Rescale axes for every audio'),
                     html.Br(),
@@ -746,7 +751,10 @@ loadings = [
 ]
 
 
-graph = [html.Div(id='visualisation'), html.Div(id='hidden_dataframe',style={'display':'none'})]
+graph = [
+            html.Div(id='visualisation'), 
+            html.Div(id='hidden_dataframe',style={'display':'none'})
+        ]
 
 
 app.layout = html.Div([
@@ -1221,19 +1229,65 @@ def disabled_name_chord(value):
     else: return False
 
 
+# @app.callback(
+#     Output("layout_output", "children"),
+#     Input("example-graph", "relayoutData"))
+# def get_layout(relayout_data: dict):
+#     if relayout_data:
+#         return json.dumps(relayout_data)
+#     raise dash.exceptions.PreventUpdate
+# @app.callback(
+#     Output('x_range_min','value'),
+#     Output('x_range_max','value'),
+#     Output('y_range_min','value'),
+#     Output('y_range_max','value'),
+#     Input('compute_button', 'n_clicks'),
+#     # Input('hidden_dataframe', 'children'),
+#     Input('selected_descr1','value'),
+#     Input('selected_descr2','value'))
+# def set_range(n_clicks, descr1, descr2):
+#     if n_clicks == 0:
+#         raise PreventUpdate
+    # else:
+    #     if (descr1 is not None) and (descr2 is not None):
+    #         global df
+    #     df_temp = df.copy()
+    #     df_temp = df_temp[df_temp['show']==1]
+    #     print('Range : \n')
+    #     print(df_temp[descr1].max())
+    #     return df_temp[descr1].min(), df_temp[descr1].max(), df_temp[descr2].min(), df_temp[descr2].max()
+
+
+# @app.callback(
+#     Output('x_range_min','value'),
+#     Output('x_range_max','value'),
+#     Output('y_range_min','value'),
+#     Output('y_range_max','value'),
+#     Input('print_range', 'n_clicks'),
+#     Input('compute_button', 'n_clicks'),
+#     State('visualisation','children'))
+# def set_range(hidden, n_clicks):
+#     if n_clicks == 0:
+#         raise PreventUpdate
+#     else:
+
 # Visualisation
 @app.callback(
     Output('visualisation','children'),
+    Output('x_range_min','value'),
+    Output('x_range_max','value'),
+    Output('y_range_min','value'),
+    Output('y_range_max','value'),
     Input('compute_button', 'n_clicks'),
     Input('selected_descr1','value'),
     Input('selected_descr2','value'),
     Input('vis_trajectories', 'value'),
     Input('normalisation_compare', 'value'),
-    # Input('vis_normalization', 'value'),
+    Input('vis_normalization', 'value'),
     Input('vis_descr', 'children'),
     Input('hidden_dataframe', 'children'),
     Input('hidden_compute_descr', 'children'))
-def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hidden3):
+def set_visualisation(n_clicks, descr1, descr2, traj, norm, norm_on_off, hidden, hidden2, hidden3):
     if n_clicks is None:
         raise PreventUpdate
     else:
@@ -1242,39 +1296,41 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hid
             global space
 
             # Sélection des descripteurs à représenter et normalisation des descripteurs
-            if not norm:
-                df_norm = df.copy()
-                df_norm = df_norm[df_norm['show']==1]
-                for descr in space:
-                    max = df_norm[descr].max()
-                    min = df_norm[descr].min()
-                    if (max-min)!= 0:
-                        df_norm[descr] = (df_norm[descr] - min) / (max-min)
-
-            else:
-                audios = df['audio'].to_list()
-                audios = list(set(audios))
-                frames = []
-                for i in audios:
-                    fr = df[(df['audio']==i) & df['show']==1]
+            if norm_on_off:
+                if not norm:
+                    df_norm = df.copy()
+                    df_norm = df_norm[df_norm['show']==1]
                     for descr in space:
-                        max = fr[descr].max()
-                        min = fr[descr].min()
+                        max = df_norm[descr].max()
+                        min = df_norm[descr].min()
                         if (max-min)!= 0:
-                            fr[descr] = (fr[descr] - min) / (max-min)
-                    frames.append(fr)
-                df_norm = pd.concat(frames)
+                            df_norm[descr] = (df_norm[descr] - min) / (max-min)
+
+                else:
+                    audios = df['audio'].to_list()
+                    audios = list(set(audios))
+                    frames = []
+                    for i in audios:
+                        fr = df[(df['audio']==i) & df['show']==1]
+                        for descr in space:
+                            max = fr[descr].max()
+                            min = fr[descr].min()
+                            if (max-min)!= 0:
+                                fr[descr] = (fr[descr] - min) / (max-min)
+                        frames.append(fr)
+                    df_norm = pd.concat(frames)
 
 
 
-
+            if norm_on_off:
+                df_repr = df_norm
+            else: df_repr = df
 
 
             # Représentations
-
             if traj:
                 fig = px.line(
-                    df_norm, x=descr1, y=descr2, text='index', color='audio',
+                    df_repr, x=descr1, y=descr2, text='index', color='audio',
                     hover_data={
                         'audio':False,
                         descr1:':.2f',
@@ -1283,7 +1339,7 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hid
                 )
             else:
                 fig = px.scatter(
-                    df_norm, x=descr1, y=descr2, text='index', color='audio',
+                    df_repr, x=descr1, y=descr2, text='index', color='audio',
                     hover_data={
                         'audio':False,
                         descr1:':.2f',
@@ -1300,21 +1356,25 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, hidden, hidden2, hid
                 margin=dict(l=0, r=0, b=0, t=0,),
             )
 
-            print('Figure Layout : ')
-            print(fig.layout.width)
-            print(fig.layout.height)
-
+            print('\nLAYOUT DATA\n')
+            print(np.min(fig.data[0]['x']), np.max(fig.data[0]['x']))
 
 
             return dcc.Graph(
                 id='example-graph',
+                config={
+        			'showAxisDragHandles': True,
+        			'showAxisRangeEntryBoxes':True
+		        },
+                # config[showAxisDragHandles] = True,
+                # config[showAxisRangeEntryBoxes] = True,
                 figure=fig,
                 # style={
                 #     'width': '600px',
                 #     'height': '500px',
                 #     'lineHeight': '30px'
                 # },
-            )
+            ), np.min(fig.data[0]['x']), np.max(fig.data[0]['x']), np.min(fig.data[0]['y']), np.max(fig.data[0]['y'])
 
 
 
