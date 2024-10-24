@@ -752,7 +752,14 @@ loadings = [
 
 
 graph = [
-            html.Div(id='visualisation'), 
+            dcc.Graph(
+                id='visualisation',
+                style={'display':'none'},
+                config={
+        			'showAxisDragHandles': True,
+        			'showAxisRangeEntryBoxes':True
+		        }
+            ),
             html.Div(id='hidden_dataframe',style={'display':'none'})
         ]
 
@@ -1273,7 +1280,8 @@ def disabled_name_chord(value):
 
 # Visualisation
 @app.callback(
-    Output('visualisation','children'),
+    Output('visualisation','figure'),
+    Output('visualisation','style'),
     Output('x_range_min','value'),
     Output('x_range_max','value'),
     Output('y_range_min','value'),
@@ -1360,21 +1368,22 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, norm_on_off, hidden,
             print(np.min(fig.data[0]['x']), np.max(fig.data[0]['x']))
 
 
-            return dcc.Graph(
-                id='example-graph',
-                config={
-        			'showAxisDragHandles': True,
-        			'showAxisRangeEntryBoxes':True
-		        },
-                # config[showAxisDragHandles] = True,
-                # config[showAxisRangeEntryBoxes] = True,
-                figure=fig,
-                # style={
-                #     'width': '600px',
-                #     'height': '500px',
-                #     'lineHeight': '30px'
-                # },
-            ), np.min(fig.data[0]['x']), np.max(fig.data[0]['x']), np.min(fig.data[0]['y']), np.max(fig.data[0]['y'])
+            return fig, {'display':'inline-block'}, np.min(fig.data[0]['x']), np.max(fig.data[0]['x']), np.min(fig.data[0]['y']), np.max(fig.data[0]['y'])
+            # dcc.Graph(
+            #     id='example-graph',
+            #     config={
+        	# 		'showAxisDragHandles': True,
+        	# 		'showAxisRangeEntryBoxes':True
+		    #     },
+            #     # config[showAxisDragHandles] = True,
+            #     # config[showAxisRangeEntryBoxes] = True,
+            #     figure=fig,
+            #     # style={
+            #     #     'width': '600px',
+            #     #     'height': '500px',
+            #     #     'lineHeight': '30px'
+            #     # },
+            # ),
 
 
 
