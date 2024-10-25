@@ -1286,7 +1286,7 @@ def disabled_name_chord(value):
     Output('x_range_max','value'),
     Output('y_range_min','value'),
     Output('y_range_max','value'),
-    Input('compute_button', 'n_clicks'),
+    [Input('compute_button', 'n_clicks'),
     Input('selected_descr1','value'),
     Input('selected_descr2','value'),
     Input('vis_trajectories', 'value'),
@@ -1294,7 +1294,8 @@ def disabled_name_chord(value):
     Input('vis_normalization', 'value'),
     Input('vis_descr', 'children'),
     Input('hidden_dataframe', 'children'),
-    Input('hidden_compute_descr', 'children'))
+    Input('hidden_compute_descr', 'children')],
+    prevent_initial_call=True)
 def set_visualisation(n_clicks, descr1, descr2, traj, norm, norm_on_off, hidden, hidden2, hidden3):
     if n_clicks is None:
         raise PreventUpdate
@@ -1364,27 +1365,53 @@ def set_visualisation(n_clicks, descr1, descr2, traj, norm, norm_on_off, hidden,
                 margin=dict(l=0, r=0, b=0, t=0,),
             )
 
-            print('\nLAYOUT DATA\n')
-            print(np.min(fig.data[0]['x']), np.max(fig.data[0]['x']))
+            # print('\nLAYOUT DATA\n')
+            # print(np.min(fig.data[0]['x']), np.max(fig.data[0]['x']))
 
 
             return fig, {'display':'inline-block'}, np.min(fig.data[0]['x']), np.max(fig.data[0]['x']), np.min(fig.data[0]['y']), np.max(fig.data[0]['y'])
-            # dcc.Graph(
-            #     id='example-graph',
-            #     config={
-        	# 		'showAxisDragHandles': True,
-        	# 		'showAxisRangeEntryBoxes':True
-		    #     },
-            #     # config[showAxisDragHandles] = True,
-            #     # config[showAxisRangeEntryBoxes] = True,
-            #     figure=fig,
-            #     # style={
-            #     #     'width': '600px',
-            #     #     'height': '500px',
-            #     #     'lineHeight': '30px'
-            #     # },
-            # ),
 
+@app.callback(
+    Output('x_range_min','value',allow_duplicate=True),
+    Output('x_range_max','value',allow_duplicate=True),
+    Output('y_range_min','value',allow_duplicate=True),
+    Output('y_range_max','value',allow_duplicate=True),
+    [Input('visualisation', 'relayoutData'),
+    Input('compute_button', 'n_clicks')],
+    prevent_initial_call=True)
+
+def update_range_box(relayoutData: dict, n_clicks):
+    if n_clicks == 0:
+        raise PreventUpdate
+    else:
+        print('\nRELAYOUTDATA\n')
+        print(relayoutData)
+        x_min = relayoutData['xaxis.range[0]']
+        x_max = relayoutData['xaxis.range[1]']
+        y_min = relayoutData['yaxis.range[0]']
+        y_max = relayoutData['yaxis.range[1]']
+        return x_min, x_max, y_min, y_max
+
+@app.callback(
+    Output('visualisation','figure',allow_duplicate=True),
+    [Input('update_axis', 'n_clicks'),
+    Input('compute_button', 'n_clicks')],
+    State('visualisation', 'figure'),
+    State('x_range_min','value'),
+    State('x_range_max','value'),
+    State('y_range_min','value'),
+    State('y_range_max','value'),
+    prevent_initial_call=True)
+
+def update_axis_fig(button, n_clicks, figure, x_min, x_max, y_min, y_max):
+    if button == 0:
+        raise PreventUpdate
+    if n_clicks == 0:
+        raise PreventUpdate
+    else:
+        figure['layout']['xaxis'] = {'range': (x_min,x_max)}
+        figure['layout']['yaxis'] = {'range': (y_min,y_max)}
+        return figure
 
 
 
