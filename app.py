@@ -559,7 +559,7 @@ signal_box = dbc.Card(
                                 dbc.Select(
                                     id='notemin',
                                     options=[{'label': note, 'value': note} for note in librosa.midi_to_note(range(12,132))],
-                                    value='C1',
+                                    value='A0',
                                 )
                             ], width = 4),
                             dbc.Col([
