@@ -30,7 +30,7 @@ A direct way to produce the segmentation file is to use the software [Sonic Visu
 The spectral analysis uses a CQT ([Constant-Q Transform](https://librosa.org/doc/0.11.0/generated/librosa.cqt.html)). This transformation, compared to the classical STFT (Short Time Fourier Transform), has the advantage of preserving the pitch accuracy (at the expense of the time accuracy).
 
 ### Harmonic descriptors
-Two types of harmonic descriptors are used, static and dynamic. Static descriptors describe the simultaneous (synchronic) spectral interactions inside a verticality, while dynamic descriptors describe the successive (diachronic) spectral interactions between two consecutive verticalities. 
+Two types of harmonic descriptors are used, static and dynamic. Static descriptors describe the simultaneous (synchronic) spectral interactions inside a verticality, while dynamic descriptors describe the successive (diachronic) spectral interactions between two consecutive verticalities. In musical terms, static descriptors analyse isolated chords, while dynamic ones analyse transitions from a chord to another. 
 
 #### Static descriptors
 - Roughness
@@ -44,9 +44,11 @@ Two types of harmonic descriptors are used, static and dynamic. Static descripto
 - Differential concordance
 - Differential roughness
 
-### Multiple files
-<img width="897" height="698" alt="image" src="https://github.com/user-attachments/assets/291b4a3f-6433-48b4-a572-8ec12c7b8735" />
+For definitions and further details on harmonic descriptors, refer to [Les descripteurs harmoniques: étude théorique et applications musicologiques](https://shs.hal.science/tel-03360582/).
 
+### Multiple files
+There is the possibility to import several audio files. This is useful to compare different musical excerpts and represent them on the same map. 
+<img width="897" height="698" alt="image" src="https://github.com/user-attachments/assets/291b4a3f-6433-48b4-a572-8ec12c7b8735" />
 
 ## Requirements
 
@@ -59,6 +61,12 @@ pip3 install -r requirements.txt
 or install the dependencies in a virtual python environment. 
 
 ## How to use
+
+1. Clone the repository on your machine and install the requirements.
+2. Go to the repo on your terminal, and run the command `python3 app.py`. You should see someting like `Dash is running on http://127.0.0.1:8050/`.
+3. Copy paste this address in your browser. You should see the app page.
+4. Import the audio and segmentation files.
+5. Choose the type of descriptors you are interested in (static, dynamic or both), then click on "Compute". The computation may take few seconds.
 
 
 
