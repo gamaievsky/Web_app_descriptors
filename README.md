@@ -10,7 +10,7 @@ The principle is as follows. The user imports one or several audio file(s), and 
 
 ## Explanations
 
-### Segmentation
+### Temporal segmentation
 The analysis methodology, which lies at the intersection of the signal and the symbolic, requires the audio signal to be segmented temporally. Harmonic descriptors are calculated based on the time segments, or verticalities, obtained in this way. For a given musical excerpt, multiple segmentations may be relevant, depending on the level of granularity and the purpose of the analysis.
 
 The segmentation must have the extension .txt, and follow the following template: 
@@ -46,8 +46,9 @@ Two types of harmonic descriptors are used, static and dynamic. Static descripto
 
 For definitions and further details on harmonic descriptors, refer to [Les descripteurs harmoniques: étude théorique et applications musicologiques](https://shs.hal.science/tel-03360582/).
 
-### Multiple files
+### Multiple audio files
 There is the possibility to import several audio files. This is useful to compare different musical excerpts and represent them on the same map. 
+
 <img width="897" height="698" alt="image" src="https://github.com/user-attachments/assets/291b4a3f-6433-48b4-a572-8ec12c7b8735" />
 
 ## Requirements
@@ -67,7 +68,19 @@ or install the dependencies in a virtual python environment.
 3. Copy paste this address in your browser. You should see the app page.
 4. Import the audio and segmentation files.
 5. Choose the type of descriptors you are interested in (static, dynamic or both), then click on "Compute". The computation may take few seconds.
+6. Set the harmonic descriptors space by choosing the X & Y axis. The map should appear.
 
+Several visualisation options are available:
+- Plot the isolated points or trajectories
+- Choose the verticalities you want to display
+- Name the verticalities
+- Get the numeric values of descriptors (with the mouse)
+- Zoom / dezoom, choose the audios to plot in case of several audio files.
+
+User have access to several signal processing parameters : 
+- Choose the analysis windows shape
+- Set the lower and higher pitch (needed by CQT)
+- Keep just the harmonic content of the sound and filter the percussive noisy part, by applying a HPSS ([Harmonic Percussive Sound Separation](https://librosa.org/doc/0.11.0/generated/librosa.decompose.hpss.html)).
 
 
 ## Further reading
